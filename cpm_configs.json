@@ -179,12 +179,6 @@
   },
   "feeds": {
     "datafeed-cpm-event-rate": {
-      "authorization": {
-        "api_key": {
-          "id": "YOUR_KEY_ID",
-          "name": "YOUR_KEY_NAME"
-        }
-      },
       "query_delay": "67193ms",
       "chunking_config": {
         "mode": "manual",
@@ -251,12 +245,6 @@
       }
     },
     "datafeed-cpm-store-size": {
-      "authorization": {
-        "api_key": {
-          "id": "YOUR_KEY_ID",
-          "name": "YOUR_KEY_NAME"
-        }
-      },
       "query_delay": "68561ms",
       "chunking_config": {
         "mode": "manual",
@@ -323,12 +311,6 @@
       }
     },
     "datafeed-cpm-jvm-heap": {
-      "authorization": {
-        "api_key": {
-          "id": "YOUR_KEY_ID",
-          "name": "YOUR_KEY_NAME"
-        }
-      },
       "query_delay": "100580ms",
       "chunking_config": {
         "mode": "manual",
@@ -395,12 +377,6 @@
       }
     },
     "datafeed-cpm-shard-count": {
-      "authorization": {
-        "api_key": {
-          "id": "YOUR_KEY_ID",
-          "name": "YOUR_KEY_NAME"
-        }
-      },
       "query_delay": "63948ms",
       "chunking_config": {
         "mode": "manual",
@@ -467,12 +443,6 @@
       }
     },
     "datafeed-cpm-cluster-event-rate": {
-      "authorization": {
-        "api_key": {
-          "id": "YOUR_KEY_ID",
-          "name": "YOUR_KEY_NAME"
-        }
-      },
       "query_delay": "86807ms",
       "chunking_config": {
         "mode": "manual",
