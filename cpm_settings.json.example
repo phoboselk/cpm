@@ -1,0 +1,9 @@
+# CPM Configuration
+# Copy this file to cpm_settings.json and fill in your values.
+# NEVER commit cpm_settings.json to version control.
+
+{
+  "es_host": "https://your-cluster.es.europe-west4.gcp.elastic-cloud.com",
+  "es_api_key": "YOUR_BASE64_ENCODED_API_KEY_HERE",
+  "monitoring_index": ".monitoring-es-8-*"
+}

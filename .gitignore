@@ -1,0 +1,11 @@
+# Build artifacts
+docs/CPM_Architecture.html
+
+# Temp files
+/tmp/
+*.pyc
+__pycache__/
+.DS_Store
+
+# Secrets - never commit real credentials
+cpm_settings.json

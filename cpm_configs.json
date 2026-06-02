@@ -1,0 +1,1829 @@
+{
+  "src_host": "YOUR_ES_HOST",
+  "jobs": {
+    "cpm-event-rate": {
+      "description": "Cumulative indexing total per backing index - proxy for ingest rate",
+      "analysis_config": {
+        "bucket_span": "15m",
+        "summary_count_field_name": "doc_count",
+        "detectors": [
+          {
+            "detector_description": "high_mean(index_total) by index_name",
+            "function": "high_mean",
+            "field_name": "index_total",
+            "by_field_name": "index_name",
+            "detector_index": 0
+          }
+        ],
+        "influencers": [
+          "index_name"
+        ],
+        "model_prune_window": "30d"
+      },
+      "analysis_limits": {
+        "model_memory_limit": "64mb",
+        "categorization_examples_limit": 4
+      },
+      "data_description": {
+        "time_field": "@timestamp",
+        "time_format": "epoch_ms"
+      },
+      "model_plot_config": {
+        "enabled": true,
+        "annotations_enabled": true
+      },
+      "model_snapshot_retention_days": 10,
+      "daily_model_snapshot_retention_after_days": 1,
+      "allow_lazy_open": false
+    },
+    "cpm-store-size": {
+      "description": "Total cluster store size - drives disk forecast",
+      "analysis_config": {
+        "bucket_span": "15m",
+        "summary_count_field_name": "doc_count",
+        "detectors": [
+          {
+            "detector_description": "high_mean(store_size_bytes) partitionfield=cluster_id",
+            "function": "high_mean",
+            "field_name": "store_size_bytes",
+            "partition_field_name": "cluster_id",
+            "detector_index": 0
+          }
+        ],
+        "influencers": [
+          "cluster_id"
+        ],
+        "model_prune_window": "30d"
+      },
+      "analysis_limits": {
+        "model_memory_limit": "32mb",
+        "categorization_examples_limit": 4
+      },
+      "data_description": {
+        "time_field": "@timestamp",
+        "time_format": "epoch_ms"
+      },
+      "model_plot_config": {
+        "enabled": true,
+        "annotations_enabled": true
+      },
+      "model_snapshot_retention_days": 10,
+      "daily_model_snapshot_retention_after_days": 1,
+      "allow_lazy_open": false
+    },
+    "cpm-jvm-heap": {
+      "description": "High mean JVM heap percent per cluster",
+      "analysis_config": {
+        "bucket_span": "15m",
+        "summary_count_field_name": "doc_count",
+        "detectors": [
+          {
+            "detector_description": "high_mean(heap_pct) partitionfield=cluster_id",
+            "function": "high_mean",
+            "field_name": "heap_pct",
+            "partition_field_name": "cluster_id",
+            "detector_index": 0
+          }
+        ],
+        "influencers": [
+          "cluster_id"
+        ],
+        "model_prune_window": "30d"
+      },
+      "analysis_limits": {
+        "model_memory_limit": "16mb",
+        "categorization_examples_limit": 4
+      },
+      "data_description": {
+        "time_field": "@timestamp",
+        "time_format": "epoch_ms"
+      },
+      "model_plot_config": {
+        "enabled": true,
+        "annotations_enabled": true
+      },
+      "model_snapshot_retention_days": 10,
+      "daily_model_snapshot_retention_after_days": 1,
+      "allow_lazy_open": false
+    },
+    "cpm-shard-count": {
+      "description": "High mean total shard count per cluster",
+      "analysis_config": {
+        "bucket_span": "15m",
+        "summary_count_field_name": "doc_count",
+        "detectors": [
+          {
+            "detector_description": "high_mean(shards_total) partitionfield=cluster_id",
+            "function": "high_mean",
+            "field_name": "shards_total",
+            "partition_field_name": "cluster_id",
+            "detector_index": 0
+          }
+        ],
+        "influencers": [
+          "cluster_id"
+        ],
+        "model_prune_window": "30d"
+      },
+      "analysis_limits": {
+        "model_memory_limit": "8mb",
+        "categorization_examples_limit": 4
+      },
+      "data_description": {
+        "time_field": "@timestamp",
+        "time_format": "epoch_ms"
+      },
+      "model_plot_config": {
+        "enabled": true,
+        "annotations_enabled": true
+      },
+      "model_snapshot_retention_days": 10,
+      "daily_model_snapshot_retention_after_days": 1,
+      "allow_lazy_open": false
+    },
+    "cpm-cluster-event-rate": {
+      "description": "Avg write queue depth per cluster - ingest backpressure indicator",
+      "analysis_config": {
+        "bucket_span": "15m",
+        "summary_count_field_name": "doc_count",
+        "detectors": [
+          {
+            "detector_description": "high_mean(write_queue_depth) partitionfield=cluster_id",
+            "function": "high_mean",
+            "field_name": "write_queue_depth",
+            "partition_field_name": "cluster_id",
+            "detector_index": 0
+          }
+        ],
+        "influencers": [
+          "cluster_id"
+        ],
+        "model_prune_window": "30d"
+      },
+      "analysis_limits": {
+        "model_memory_limit": "16mb",
+        "categorization_examples_limit": 4
+      },
+      "data_description": {
+        "time_field": "@timestamp",
+        "time_format": "epoch_ms"
+      },
+      "model_plot_config": {
+        "enabled": true,
+        "annotations_enabled": true
+      },
+      "model_snapshot_retention_days": 10,
+      "daily_model_snapshot_retention_after_days": 1,
+      "allow_lazy_open": false
+    }
+  },
+  "feeds": {
+    "datafeed-cpm-event-rate": {
+      "authorization": {
+        "api_key": {
+          "id": "YOUR_KEY_ID",
+          "name": "YOUR_KEY_NAME"
+        }
+      },
+      "query_delay": "67193ms",
+      "chunking_config": {
+        "mode": "manual",
+        "time_span": "900000000ms"
+      },
+      "indices_options": {
+        "ignore_unavailable": false,
+        "expand_wildcards": [
+          "open"
+        ],
+        "allow_no_indices": true,
+        "ignore_throttled": true
+      },
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "match_phrase": {
+                "event.dataset": "elasticsearch.index"
+              }
+            }
+          ]
+        }
+      },
+      "indices": [
+        ".monitoring-es-8-*"
+      ],
+      "aggregations": {
+        "buckets": {
+          "date_histogram": {
+            "field": "@timestamp",
+            "fixed_interval": "15m"
+          },
+          "aggregations": {
+            "@timestamp": {
+              "max": {
+                "field": "@timestamp"
+              }
+            },
+            "index_name": {
+              "terms": {
+                "field": "elasticsearch.index.name",
+                "size": 1000
+              },
+              "aggregations": {
+                "index_total": {
+                  "max": {
+                    "field": "elasticsearch.index.total.indexing.index_total"
+                  }
+                },
+                "doc_count": {
+                  "value_count": {
+                    "field": "@timestamp"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "scroll_size": 1000,
+      "delayed_data_check_config": {
+        "enabled": true
+      }
+    },
+    "datafeed-cpm-store-size": {
+      "authorization": {
+        "api_key": {
+          "id": "YOUR_KEY_ID",
+          "name": "YOUR_KEY_NAME"
+        }
+      },
+      "query_delay": "68561ms",
+      "chunking_config": {
+        "mode": "manual",
+        "time_span": "900000000ms"
+      },
+      "indices_options": {
+        "ignore_unavailable": false,
+        "expand_wildcards": [
+          "open"
+        ],
+        "allow_no_indices": true,
+        "ignore_throttled": true
+      },
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "match_phrase": {
+                "event.dataset": "elasticsearch.cluster.stats"
+              }
+            }
+          ]
+        }
+      },
+      "indices": [
+        ".monitoring-es-8-*"
+      ],
+      "aggregations": {
+        "buckets": {
+          "date_histogram": {
+            "field": "@timestamp",
+            "fixed_interval": "15m"
+          },
+          "aggregations": {
+            "@timestamp": {
+              "max": {
+                "field": "@timestamp"
+              }
+            },
+            "cluster_id": {
+              "terms": {
+                "field": "elasticsearch.cluster.id",
+                "size": 10
+              },
+              "aggregations": {
+                "store_size_bytes": {
+                  "max": {
+                    "field": "elasticsearch.cluster.stats.indices.store.size.bytes"
+                  }
+                },
+                "doc_count": {
+                  "value_count": {
+                    "field": "@timestamp"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "scroll_size": 1000,
+      "delayed_data_check_config": {
+        "enabled": true
+      }
+    },
+    "datafeed-cpm-jvm-heap": {
+      "authorization": {
+        "api_key": {
+          "id": "YOUR_KEY_ID",
+          "name": "YOUR_KEY_NAME"
+        }
+      },
+      "query_delay": "100580ms",
+      "chunking_config": {
+        "mode": "manual",
+        "time_span": "900000000ms"
+      },
+      "indices_options": {
+        "ignore_unavailable": false,
+        "expand_wildcards": [
+          "open"
+        ],
+        "allow_no_indices": true,
+        "ignore_throttled": true
+      },
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "match_phrase": {
+                "event.dataset": "elasticsearch.node.stats"
+              }
+            }
+          ]
+        }
+      },
+      "indices": [
+        ".monitoring-es-8-*"
+      ],
+      "aggregations": {
+        "buckets": {
+          "date_histogram": {
+            "field": "@timestamp",
+            "fixed_interval": "15m"
+          },
+          "aggregations": {
+            "@timestamp": {
+              "max": {
+                "field": "@timestamp"
+              }
+            },
+            "cluster_id": {
+              "terms": {
+                "field": "elasticsearch.cluster.id",
+                "size": 10
+              },
+              "aggregations": {
+                "heap_pct": {
+                  "max": {
+                    "field": "elasticsearch.node.stats.jvm.mem.heap.used.pct"
+                  }
+                },
+                "doc_count": {
+                  "value_count": {
+                    "field": "@timestamp"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "scroll_size": 1000,
+      "delayed_data_check_config": {
+        "enabled": true
+      }
+    },
+    "datafeed-cpm-shard-count": {
+      "authorization": {
+        "api_key": {
+          "id": "YOUR_KEY_ID",
+          "name": "YOUR_KEY_NAME"
+        }
+      },
+      "query_delay": "63948ms",
+      "chunking_config": {
+        "mode": "manual",
+        "time_span": "900000000ms"
+      },
+      "indices_options": {
+        "ignore_unavailable": false,
+        "expand_wildcards": [
+          "open"
+        ],
+        "allow_no_indices": true,
+        "ignore_throttled": true
+      },
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "match_phrase": {
+                "event.dataset": "elasticsearch.cluster.stats"
+              }
+            }
+          ]
+        }
+      },
+      "indices": [
+        ".monitoring-es-8-*"
+      ],
+      "aggregations": {
+        "buckets": {
+          "date_histogram": {
+            "field": "@timestamp",
+            "fixed_interval": "15m"
+          },
+          "aggregations": {
+            "@timestamp": {
+              "max": {
+                "field": "@timestamp"
+              }
+            },
+            "cluster_id": {
+              "terms": {
+                "field": "elasticsearch.cluster.id",
+                "size": 10
+              },
+              "aggregations": {
+                "shards_total": {
+                  "max": {
+                    "field": "elasticsearch.cluster.stats.indices.shards.count"
+                  }
+                },
+                "doc_count": {
+                  "value_count": {
+                    "field": "@timestamp"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "scroll_size": 1000,
+      "delayed_data_check_config": {
+        "enabled": true
+      }
+    },
+    "datafeed-cpm-cluster-event-rate": {
+      "authorization": {
+        "api_key": {
+          "id": "YOUR_KEY_ID",
+          "name": "YOUR_KEY_NAME"
+        }
+      },
+      "query_delay": "86807ms",
+      "chunking_config": {
+        "mode": "manual",
+        "time_span": "900000000ms"
+      },
+      "indices_options": {
+        "ignore_unavailable": false,
+        "expand_wildcards": [
+          "open"
+        ],
+        "allow_no_indices": true,
+        "ignore_throttled": true
+      },
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "match_phrase": {
+                "event.dataset": "elasticsearch.node.stats"
+              }
+            }
+          ]
+        }
+      },
+      "indices": [
+        ".monitoring-es-8-*"
+      ],
+      "aggregations": {
+        "buckets": {
+          "date_histogram": {
+            "field": "@timestamp",
+            "fixed_interval": "15m"
+          },
+          "aggregations": {
+            "@timestamp": {
+              "max": {
+                "field": "@timestamp"
+              }
+            },
+            "cluster_id": {
+              "terms": {
+                "field": "elasticsearch.cluster.id",
+                "size": 10
+              },
+              "aggregations": {
+                "write_queue_depth": {
+                  "avg": {
+                    "field": "elasticsearch.node.stats.thread_pool.write.queue.count"
+                  }
+                },
+                "doc_count": {
+                  "value_count": {
+                    "field": "@timestamp"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "scroll_size": 1000,
+      "delayed_data_check_config": {
+        "enabled": true
+      }
+    }
+  },
+  "watches": {
+    "cpm-forecast-trigger": {
+      "trigger": {
+        "schedule": {
+          "interval": "1h"
+        }
+      },
+      "input": {
+        "none": {}
+      },
+      "condition": {
+        "always": {}
+      },
+      "actions": {
+        "forecast_cpm-store-size": {
+          "webhook": {
+            "scheme": "https",
+            "host": "YOUR_ES_HOST",
+            "port": 443,
+            "method": "post",
+            "path": "/_ml/anomaly_detectors/cpm-store-size/_forecast",
+            "params": {},
+            "headers": {
+              "Content-Type": "application/json",
+              "Authorization": "::es_redacted::"
+            },
+            "body": "{\"duration\":\"24h\",\"expires_in\":\"48h\"}"
+          }
+        },
+        "forecast_cpm-jvm-heap": {
+          "webhook": {
+            "scheme": "https",
+            "host": "YOUR_ES_HOST",
+            "port": 443,
+            "method": "post",
+            "path": "/_ml/anomaly_detectors/cpm-jvm-heap/_forecast",
+            "params": {},
+            "headers": {
+              "Content-Type": "application/json",
+              "Authorization": "::es_redacted::"
+            },
+            "body": "{\"duration\":\"24h\",\"expires_in\":\"48h\"}"
+          }
+        },
+        "forecast_cpm-shard-count": {
+          "webhook": {
+            "scheme": "https",
+            "host": "YOUR_ES_HOST",
+            "port": 443,
+            "method": "post",
+            "path": "/_ml/anomaly_detectors/cpm-shard-count/_forecast",
+            "params": {},
+            "headers": {
+              "Content-Type": "application/json",
+              "Authorization": "::es_redacted::"
+            },
+            "body": "{\"duration\":\"24h\",\"expires_in\":\"48h\"}"
+          }
+        },
+        "forecast_cpm-cluster-event-rate": {
+          "webhook": {
+            "scheme": "https",
+            "host": "YOUR_ES_HOST",
+            "port": 443,
+            "method": "post",
+            "path": "/_ml/anomaly_detectors/cpm-cluster-event-rate/_forecast",
+            "params": {},
+            "headers": {
+              "Content-Type": "application/json",
+              "Authorization": "::es_redacted::"
+            },
+            "body": "{\"duration\":\"24h\",\"expires_in\":\"48h\"}"
+          }
+        }
+      }
+    },
+    "cpm-scoring": {
+      "trigger": {
+        "schedule": {
+          "cron": "0 5 0 * * ?"
+        }
+      },
+      "input": {
+        "chain": {
+          "inputs": [
+            {
+              "registry": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      "cpm-cluster-registry"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 10,
+                      "query": {
+                        "term": {
+                          "active": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "disk_forecast": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      ".ml-anomalies-*"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 0,
+                      "query": {
+                        "bool": {
+                          "filter": [
+                            {
+                              "term": {
+                                "job_id": "cpm-store-size"
+                              }
+                            },
+                            {
+                              "term": {
+                                "result_type": "model_forecast"
+                              }
+                            },
+                            {
+                              "range": {
+                                "timestamp": {
+                                  "gte": "now",
+                                  "lte": "now+24h"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "aggs": {
+                        "by_cluster": {
+                          "terms": {
+                            "field": "partition_field_value",
+                            "size": 10
+                          },
+                          "aggs": {
+                            "peak": {
+                              "max": {
+                                "field": "forecast_prediction"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "jvm_forecast": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      ".ml-anomalies-*"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 0,
+                      "query": {
+                        "bool": {
+                          "filter": [
+                            {
+                              "term": {
+                                "job_id": "cpm-jvm-heap"
+                              }
+                            },
+                            {
+                              "term": {
+                                "result_type": "model_forecast"
+                              }
+                            },
+                            {
+                              "range": {
+                                "timestamp": {
+                                  "gte": "now",
+                                  "lte": "now+24h"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "aggs": {
+                        "by_cluster": {
+                          "terms": {
+                            "field": "partition_field_value",
+                            "size": 10
+                          },
+                          "aggs": {
+                            "peak": {
+                              "max": {
+                                "field": "forecast_prediction"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "shard_forecast": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      ".ml-anomalies-*"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 0,
+                      "query": {
+                        "bool": {
+                          "filter": [
+                            {
+                              "term": {
+                                "job_id": "cpm-shard-count"
+                              }
+                            },
+                            {
+                              "term": {
+                                "result_type": "model_forecast"
+                              }
+                            },
+                            {
+                              "range": {
+                                "timestamp": {
+                                  "gte": "now",
+                                  "lte": "now+24h"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "aggs": {
+                        "by_cluster": {
+                          "terms": {
+                            "field": "partition_field_value",
+                            "size": 10
+                          },
+                          "aggs": {
+                            "peak": {
+                              "max": {
+                                "field": "forecast_prediction"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "load_forecast": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      ".ml-anomalies-*"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 0,
+                      "query": {
+                        "bool": {
+                          "filter": [
+                            {
+                              "term": {
+                                "job_id": "cpm-cluster-event-rate"
+                              }
+                            },
+                            {
+                              "term": {
+                                "result_type": "model_forecast"
+                              }
+                            },
+                            {
+                              "range": {
+                                "timestamp": {
+                                  "gte": "now",
+                                  "lte": "now+24h"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "aggs": {
+                        "by_cluster": {
+                          "terms": {
+                            "field": "partition_field_value",
+                            "size": 10
+                          },
+                          "aggs": {
+                            "peak": {
+                              "max": {
+                                "field": "forecast_prediction"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "condition": {
+        "always": {}
+      },
+      "transform": {
+        "script": {
+          "source": "\nMap diskMap  = new HashMap();\nMap jvmMap   = new HashMap();\nMap shardMap = new HashMap();\nMap loadMap  = new HashMap();\nMap regMap   = new HashMap();\n\nfor (def b : ctx.payload.disk_forecast.aggregations.by_cluster.buckets)\n  diskMap[b.key]  = b.peak.value != null ? ((Number)b.peak.value).doubleValue() : 0.0;\nfor (def b : ctx.payload.jvm_forecast.aggregations.by_cluster.buckets)\n  jvmMap[b.key]   = b.peak.value != null ? ((Number)b.peak.value).doubleValue() : 0.0;\nfor (def b : ctx.payload.shard_forecast.aggregations.by_cluster.buckets)\n  shardMap[b.key] = b.peak.value != null ? ((Number)b.peak.value).doubleValue() : 0.0;\nfor (def b : ctx.payload.load_forecast.aggregations.by_cluster.buckets)\n  loadMap[b.key]  = b.peak.value != null ? ((Number)b.peak.value).doubleValue() : 0.0;\nfor (def hit : ctx.payload.registry.hits.hits)\n  regMap[hit._source.cluster_uuid] = hit._source;\n\nList clusters = new ArrayList();\nfor (def uuid : regMap.keySet()) {\n  def reg        = regMap[uuid];\n  double dtotal  = reg['disk_total_bytes']       != null ? ((Number)reg['disk_total_bytes']).doubleValue()       : 1.0;\n  double smax    = reg['shard_max_threshold']    != null ? ((Number)reg['shard_max_threshold']).doubleValue()    : 1000.0;\n  double qthresh = reg['write_queue_threshold']  != null ? ((Number)reg['write_queue_threshold']).doubleValue()  : 50.0;\n\n  double diskB    = diskMap.containsKey(uuid)  ? diskMap[uuid]  : 0.0;\n  double jvmP     = jvmMap.containsKey(uuid)   ? jvmMap[uuid]   : 0.0;\n  double shardC   = shardMap.containsKey(uuid) ? shardMap[uuid] : 0.0;\n  double queueD   = loadMap.containsKey(uuid)  ? loadMap[uuid]  : 0.0;\n\n  double diskScore  = dtotal  > 0 ? (diskB  / dtotal)  * 100.0 : 0.0;\n  double jvmScore   = jvmP;\n  double shardScore = smax    > 0 ? (shardC / smax)    * 100.0 : 0.0;\n  double loadScore  = qthresh > 0 ? (queueD / qthresh) * 100.0 : 0.0;\n\n  // Weighted: 0.50*disk + 0.25*jvm + 0.05*shard + 0.20*load\n  double total = 0.50*diskScore + 0.25*jvmScore + 0.05*shardScore + 0.20*loadScore;\n\n  Map c = new HashMap();\n  c['cluster_id']              = reg['cluster_id'];\n  c['cluster_uuid']            = uuid;\n  c['disk_used_pct_forecast']  = diskScore;\n  c['jvm_heap_pct_forecast']   = jvmScore;\n  c['shard_score']             = shardScore;\n  c['write_queue_forecast']    = queueD;\n  c['load_score']              = loadScore;\n  c['total_score']             = total;\n  c['alert']                   = total > 80.0;\n  clusters.add(c);\n}\n\nMap out = new HashMap();\nout['scored_at']              = ctx.execution_time.toString();\nout['forecast_horizon_hours'] = 24;\nout['clusters']               = clusters;\nreturn out;\n",
+          "lang": "painless"
+        }
+      },
+      "actions": {
+        "write_scores": {
+          "index": {
+            "index": "cpm-scores"
+          }
+        }
+      }
+    },
+    "cpm-routing-advisor": {
+      "trigger": {
+        "schedule": {
+          "cron": "0 10 0 * * ?"
+        }
+      },
+      "input": {
+        "chain": {
+          "inputs": [
+            {
+              "scores": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      "cpm-scores"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 1,
+                      "sort": [
+                        {
+                          "scored_at": "desc"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "index_rates": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      ".monitoring-es-8-*"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 0,
+                      "query": {
+                        "bool": {
+                          "filter": [
+                            {
+                              "match_phrase": {
+                                "event.dataset": "elasticsearch.index"
+                              }
+                            },
+                            {
+                              "range": {
+                                "@timestamp": {
+                                  "gte": "now-2h"
+                                }
+                              }
+                            },
+                            {
+                              "bool": {
+                                "should": [
+                                  {
+                                    "wildcard": {
+                                      "elasticsearch.index.name": ".ds-logs-*"
+                                    }
+                                  },
+                                  {
+                                    "wildcard": {
+                                      "elasticsearch.index.name": ".ds-metrics-*"
+                                    }
+                                  },
+                                  {
+                                    "wildcard": {
+                                      "elasticsearch.index.name": ".ds-traces-*"
+                                    }
+                                  }
+                                ],
+                                "minimum_should_match": 1
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "aggs": {
+                        "by_cluster": {
+                          "terms": {
+                            "field": "cluster_uuid",
+                            "size": 10
+                          },
+                          "aggs": {
+                            "by_index": {
+                              "terms": {
+                                "field": "elasticsearch.index.name",
+                                "size": 500
+                              },
+                              "aggs": {
+                                "over_time": {
+                                  "date_histogram": {
+                                    "field": "@timestamp",
+                                    "fixed_interval": "1h"
+                                  },
+                                  "aggs": {
+                                    "max_total": {
+                                      "max": {
+                                        "field": "elasticsearch.index.total.indexing.index_total"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "condition": {
+        "always": {}
+      },
+      "transform": {
+        "script": {
+          "source": "// Build cluster score map from latest scoring run\nMap scoreMap = new HashMap();\ndef latestDocs = ctx.payload.scores.hits.hits;\nif (!latestDocs.isEmpty()) {\n  def sc = latestDocs[0]._source['clusters'];\n  if (sc != null) {\n    for (def c : sc) {\n      Map m = new HashMap();\n      m.put('total_score', ((Number)c['total_score']).doubleValue());\n      m.put('cluster_id',  c['cluster_id']);\n      scoreMap.put((String)c['cluster_uuid'], m);\n    }\n  }\n}\n\n// Build per-cluster per-dataset ingest rates from monitoring\nMap clusterRates = new HashMap();\nfor (def cb : ctx.payload.index_rates.aggregations.by_cluster.buckets) {\n  String uuid = (String)cb['key'];\n  Map dRates  = new HashMap();\n  for (def ib : cb['by_index']['buckets']) {\n    String iname = (String)ib['key'];\n    if (!iname.startsWith('.ds-')) continue;\n    String afterDs = iname.substring(4);\n    if (!afterDs.startsWith('logs-') && !afterDs.startsWith('metrics-') && !afterDs.startsWith('traces-')) continue;\n    String idx = afterDs;\n    int p = idx.lastIndexOf('-'); if (p <= 0) continue;\n    idx = idx.substring(0, p);\n    p   = idx.lastIndexOf('-');  if (p <= 0) continue;\n    idx = idx.substring(0, p);\n    int fd = idx.indexOf('-');   if (fd <= 0) continue;\n    String rest = idx.substring(fd + 1);\n    int nd = rest.lastIndexOf('-'); if (nd <= 0) continue;\n    String dataset   = rest.substring(0, nd);\n    String namespace = rest.substring(nd + 1);\n    String key = dataset + '|' + namespace;\n    long delta = 0L;\n    def tb = ib['over_time']['buckets'];\n    if (tb.size() >= 2) {\n      def v0 = tb.get(0)['max_total']['value'];\n      def v1 = tb.get(tb.size() - 1)['max_total']['value'];\n      if (v0 != null && v1 != null) {\n        double diff = ((Number)v1).doubleValue() - ((Number)v0).doubleValue();\n        if (diff > 0.0) delta = (long)diff;\n      }\n    }\n    long prev = dRates.containsKey(key) ? ((Number)dRates.get(key)).longValue() : 0L;\n    dRates.put(key, prev + delta);\n  }\n  clusterRates.put(uuid, dRates);\n}\n\n// Collect ALL data stream rates into a flat list with source cluster info\nList allStreams = new ArrayList();\nfor (def entry : clusterRates.entrySet()) {\n  String uuid = (String)entry.getKey();\n  Map dRates = (Map)entry.getValue();\n  for (def re : dRates.entrySet()) {\n    String key = (String)re.getKey();\n    long rate = ((Number)re.getValue()).longValue();\n    if (rate <= 0L) continue;\n    int pi = key.indexOf('|');\n    String dataset = pi > 0 ? key.substring(0, pi) : key;\n    String namespace = pi > 0 ? key.substring(pi + 1) : 'default';\n    Map s = new HashMap();\n    s.put('key', key);\n    s.put('dataset', dataset);\n    s.put('namespace', namespace);\n    s.put('rate', rate);\n    s.put('source_uuid', uuid);\n    allStreams.add(s);\n  }\n}\n\n// Sort streams by rate descending and take top N\nint N = scoreMap.size();\nint streamCount = allStreams.size();\nfor (int i = 0; i < streamCount - 1; i++) {\n  for (int j = i + 1; j < streamCount; j++) {\n    long rj = ((Number)allStreams.get(j).get('rate')).longValue();\n    long ri = ((Number)allStreams.get(i).get('rate')).longValue();\n    if (rj > ri) {\n      Map tmp = allStreams.get(i);\n      allStreams.set(i, allStreams.get(j));\n      allStreams.set(j, tmp);\n    }\n  }\n}\nint topN = N < streamCount ? N : streamCount;\nList topStreams = new ArrayList();\nfor (int i = 0; i < topN; i++) {\n  topStreams.add(allStreams.get(i));\n}\n\n// Sort clusters by score ascending (lightest first)\nList clusterList = new ArrayList();\nfor (def entry : scoreMap.entrySet()) {\n  Map m = new HashMap();\n  m.put('uuid', entry.getKey());\n  m.put('cluster_id', ((Map)entry.getValue()).get('cluster_id'));\n  m.put('score', ((Number)((Map)entry.getValue()).get('total_score')).doubleValue());\n  clusterList.add(m);\n}\nint clusterCount = clusterList.size();\nfor (int i = 0; i < clusterCount - 1; i++) {\n  for (int j = i + 1; j < clusterCount; j++) {\n    double sj = ((Number)clusterList.get(j).get('score')).doubleValue();\n    double si = ((Number)clusterList.get(i).get('score')).doubleValue();\n    if (sj < si) {\n      Map tmp = clusterList.get(i);\n      clusterList.set(i, clusterList.get(j));\n      clusterList.set(j, tmp);\n    }\n  }\n}\n\n// Phase 1: Greedy assignment\nList suggestions = new ArrayList();\nSet usedTargets = new HashSet();\nMap vacatingMap = new HashMap();\nList skippedList = new ArrayList();\n\nfor (int i = 0; i < topStreams.size(); i++) {\n  Map stream = (Map)topStreams.get(i);\n  String sourceUuid = (String)stream.get('source_uuid');\n  long streamRate = ((Number)stream.get('rate')).longValue();\n\n  // Find the lightest cluster that hasn't been used as a target yet\n  Map bestTarget = null;\n  for (def cl : clusterList) {\n    String tgtUuid = (String)cl.get('uuid');\n    if (usedTargets.contains(tgtUuid)) continue;\n    bestTarget = cl;\n    break;\n  }\n  if (bestTarget == null) break;\n\n  String tgtUuid = (String)bestTarget.get('uuid');\n  double tgtScore = ((Number)bestTarget.get('score')).doubleValue();\n  double srcScore = ((Number)((Map)scoreMap.get(sourceUuid)).get('total_score')).doubleValue();\n\n  // Source same as target: skip for Phase 2\n  if (sourceUuid.equals(tgtUuid)) {\n    Map skip = new HashMap();\n    skip.put('stream', stream);\n    skip.put('target_uuid', tgtUuid);\n    skip.put('target_score', tgtScore);\n    skip.put('source_score', srcScore);\n    skippedList.add(skip);\n    usedTargets.add(tgtUuid);\n    continue;\n  }\n\n  // Target lighter than source: create suggestion\n  if (tgtScore < srcScore) {\n    usedTargets.add(tgtUuid);\n    // Track that source cluster is vacating this rate\n    long prevVacating = vacatingMap.containsKey(sourceUuid) ? ((Number)vacatingMap.get(sourceUuid)).longValue() : 0L;\n    vacatingMap.put(sourceUuid, prevVacating + streamRate);\n\n    String sourceId = (String)((Map)scoreMap.get(sourceUuid)).get('cluster_id');\n    String tgtId = (String)bestTarget.get('cluster_id');\n\n    Map sug = new HashMap();\n    sug.put('dataset',               stream.get('dataset'));\n    sug.put('namespace',             stream.get('namespace'));\n    sug.put('source_cluster',        sourceUuid);\n    sug.put('source_cluster_id',     sourceId);\n    sug.put('suggested_cluster_id',  tgtId);\n    sug.put('source_score',          srcScore);\n    sug.put('target_score',          tgtScore);\n    sug.put('event_rate_1h',         streamRate);\n    sug.put('reason',                'Move ' + stream.get('dataset') + ' (' + streamRate + ' evt/hr) from ' + sourceId + ' (score: ' + (int)srcScore + ') to ' + tgtId + ' (score: ' + (int)tgtScore + ').');\n    suggestions.add(sug);\n  } else {\n    // Target heavier: skip for Phase 2\n    Map skip = new HashMap();\n    skip.put('stream', stream);\n    skip.put('target_uuid', tgtUuid);\n    skip.put('target_score', tgtScore);\n    skip.put('source_score', srcScore);\n    skippedList.add(skip);\n    usedTargets.add(tgtUuid);\n  }\n}\n\n// Phase 2: Paired swaps and local dedicated\nfor (def skip : skippedList) {\n  Map stream = (Map)skip.get('stream');\n  String sourceUuid = (String)stream.get('source_uuid');\n  String tgtUuid = (String)skip.get('target_uuid');\n  long streamRate = ((Number)stream.get('rate')).longValue();\n  double tgtScore = ((Number)skip.get('target_score')).doubleValue();\n  double srcScore = ((Number)skip.get('source_score')).doubleValue();\n\n  // Source same as target: local dedicated pipeline\n  if (sourceUuid.equals(tgtUuid)) {\n    String sourceId = (String)((Map)scoreMap.get(sourceUuid)).get('cluster_id');\n    Map sug = new HashMap();\n    sug.put('dataset',               stream.get('dataset'));\n    sug.put('namespace',             stream.get('namespace'));\n    sug.put('source_cluster',        sourceUuid);\n    sug.put('source_cluster_id',     sourceId);\n    sug.put('suggested_cluster_id',  sourceId);\n    sug.put('source_score',          srcScore);\n    sug.put('target_score',          srcScore);\n    sug.put('event_rate_1h',         streamRate);\n    sug.put('reason',                'Local dedicated pipeline for ' + stream.get('dataset') + ' (' + streamRate + ' evt/hr) on ' + sourceId + '.');\n    suggestions.add(sug);\n    continue;\n  }\n\n  // Target heavier: check paired swap\n  if (vacatingMap.containsKey(tgtUuid)) {\n    long vacatingRate = ((Number)vacatingMap.get(tgtUuid)).longValue();\n    if (vacatingRate > streamRate) {\n      // Safe swap: target is losing more rate than this dataset would add\n      String sourceId = (String)((Map)scoreMap.get(sourceUuid)).get('cluster_id');\n      String tgtId = tgtUuid;\n      for (def cl : clusterList) {\n        if (((String)cl.get('uuid')).equals(tgtUuid)) {\n          tgtId = (String)cl.get('cluster_id');\n          break;\n        }\n      }\n\n      Map sug = new HashMap();\n      sug.put('dataset',               stream.get('dataset'));\n      sug.put('namespace',             stream.get('namespace'));\n      sug.put('source_cluster',        sourceUuid);\n      sug.put('source_cluster_id',     sourceId);\n      sug.put('suggested_cluster_id',  tgtId);\n      sug.put('source_score',          srcScore);\n      sug.put('target_score',          tgtScore);\n      sug.put('event_rate_1h',         streamRate);\n      sug.put('reason',                'Swap ' + stream.get('dataset') + ' (' + streamRate + ' evt/hr) from ' + sourceId + ' (score: ' + (int)srcScore + ') to ' + tgtId + ' (score: ' + (int)tgtScore + ', vacating ' + vacatingRate + ' evt/hr).');\n      suggestions.add(sug);\n    }\n  }\n}\n\nMap out = new HashMap();\nout.put('suggested_at',   ctx.execution_time.toString());\nout.put('clusters_total', N);\nout.put('suggestions',    suggestions);\nreturn out;",
+          "lang": "painless"
+        }
+      },
+      "actions": {
+        "write_suggestions": {
+          "webhook": {
+            "scheme": "https",
+            "host": "YOUR_ES_HOST",
+            "port": 443,
+            "method": "post",
+            "path": "/_bulk",
+            "params": {},
+            "headers": {
+              "Content-Type": "application/x-ndjson",
+              "Authorization": "ApiKey YOUR_API_KEY"
+            },
+            "body": "{{#ctx.payload.suggestions}}{\"index\":{\"_index\":\"cpm-routing-suggestions\"}}\n{\"suggested_at\":\"{{{ctx.payload.suggested_at}}}\",\"clusters_total\":{{ctx.payload.clusters_total}},\"dataset\":\"{{{dataset}}}\",\"namespace\":\"{{{namespace}}}\",\"source_cluster\":\"{{{source_cluster}}}\",\"source_cluster_id\":\"{{{source_cluster_id}}}\",\"suggested_cluster_id\":\"{{{suggested_cluster_id}}}\",\"source_score\":{{source_score}},\"target_score\":{{target_score}},\"event_rate_1h\":{{event_rate_1h}},\"reason\":\"{{{reason}}}\"}\n{{/ctx.payload.suggestions}}"
+          }
+        }
+      }
+    },
+    "cpm-registry-sync": {
+      "trigger": {
+        "schedule": {
+          "cron": "0 0 0 * * ?"
+        }
+      },
+      "input": {
+        "chain": {
+          "inputs": [
+            {
+              "existing_registry": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      "cpm-cluster-registry"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 100
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "monitoring_clusters": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      ".monitoring-es-8-*"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 0,
+                      "query": {
+                        "bool": {
+                          "filter": [
+                            {
+                              "match_phrase": {
+                                "event.dataset": "elasticsearch.cluster.stats"
+                              }
+                            },
+                            {
+                              "range": {
+                                "@timestamp": {
+                                  "gte": "now-1d"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "aggs": {
+                        "by_cluster": {
+                          "terms": {
+                            "field": "elasticsearch.cluster.id",
+                            "size": 20
+                          },
+                          "aggs": {
+                            "cluster_name": {
+                              "terms": {
+                                "field": "elasticsearch.cluster.name",
+                                "size": 1
+                              }
+                            },
+                            "latest_doc": {
+                              "top_hits": {
+                                "size": 1,
+                                "sort": [
+                                  {
+                                    "@timestamp": "desc"
+                                  }
+                                ],
+                                "_source": {
+                                  "includes": [
+                                    "elasticsearch.cluster.stats.state.nodes"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "node_capacity": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      ".monitoring-es-8-*"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 0,
+                      "query": {
+                        "bool": {
+                          "filter": [
+                            {
+                              "match_phrase": {
+                                "event.dataset": "elasticsearch.node.stats"
+                              }
+                            },
+                            {
+                              "range": {
+                                "@timestamp": {
+                                  "gte": "now-1d"
+                                }
+                              }
+                            },
+                            {
+                              "terms": {
+                                "elasticsearch.node.roles": [
+                                  "data",
+                                  "data_content",
+                                  "data_hot",
+                                  "data_cold",
+                                  "data_warm"
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "aggs": {
+                        "by_cluster": {
+                          "terms": {
+                            "field": "elasticsearch.cluster.id",
+                            "size": 20
+                          },
+                          "aggs": {
+                            "by_node": {
+                              "terms": {
+                                "field": "elasticsearch.node.id",
+                                "size": 200
+                              },
+                              "aggs": {
+                                "disk_total": {
+                                  "max": {
+                                    "field": "elasticsearch.node.stats.fs.summary.total.bytes"
+                                  }
+                                },
+                                "heap_max": {
+                                  "max": {
+                                    "field": "elasticsearch.node.stats.jvm.mem.heap.max.bytes"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "condition": {
+        "script": {
+          "source": "ctx.payload.monitoring_clusters.aggregations.by_cluster.buckets.size() > 0",
+          "lang": "painless"
+        }
+      },
+      "transform": {
+        "script": {
+          "source": "Map existing = new HashMap();\nfor (def hit : ctx.payload.existing_registry.hits.hits) {\n  def s = hit._source;\n  Map m = new HashMap();\n  if (s.containsKey('cluster_id'))            m['cluster_id']            = s['cluster_id'];\n  if (s.containsKey('cluster_name'))           m['cluster_name']           = s['cluster_name'];\n  if (s.containsKey('active'))                 m['active']                 = s['active'];\n  if (s.containsKey('dc'))                     m['dc']                     = s['dc'];\n  if (s.containsKey('ingest_hosts'))           m['ingest_hosts']           = s['ingest_hosts'];\n  if (s.containsKey('ingest_capacity_per_day')) m['ingest_capacity_per_day'] = s['ingest_capacity_per_day'];\n  existing[(String)s['cluster_uuid']] = m;\n}\n\n// Extract dc from cluster stats node attributes\nMap dcMap = new HashMap();\nfor (def cb : ctx.payload.monitoring_clusters.aggregations.by_cluster.buckets) {\n  String uuid = (String)cb.key;\n  if (cb.latest_doc.hits.hits.size() > 0) {\n    def src = cb.latest_doc.hits.hits[0]._source;\n    def esNode = src.elasticsearch;\n    if (esNode != null) {\n      def stats = esNode.cluster.stats;\n      if (stats != null && stats.state != null && stats.state.nodes != null) {\n        def nodes = stats.state.nodes;\n        for (def nodeEntry : nodes.entrySet()) {\n          def nodeVal = nodeEntry.getValue();\n          if (nodeVal != null && nodeVal.attributes != null) {\n            if (nodeVal.attributes.dc != null) {\n              dcMap.put(uuid, (String)nodeVal.attributes.dc);\n              break;\n            }\n            if (nodeVal.attributes.region != null) {\n              dcMap.put(uuid, (String)nodeVal.attributes.region);\n              break;\n            }\n          }\n        }\n      }\n    }\n  }\n}\n\nMap capacityMap = new HashMap();\nfor (def cb : ctx.payload.node_capacity.aggregations.by_cluster.buckets) {\n  String cid = (String)cb.key;\n  long totalDisk = 0L;\n  long totalHeap = 0L;\n  int nodeCount = 0;\n  for (def nb : cb.by_node.buckets) {\n    if (nb.disk_total.value != null) totalDisk += ((Number)nb.disk_total.value).longValue();\n    if (nb.heap_max.value != null)   totalHeap += ((Number)nb.heap_max.value).longValue();\n    nodeCount++;\n  }\n  Map cap = new HashMap();\n  cap['disk_total_bytes'] = totalDisk;\n  cap['heap_max_bytes']   = totalHeap;\n  cap['node_count']       = nodeCount;\n  capacityMap[cid] = cap;\n}\n\nList clusters = new ArrayList();\nfor (def b : ctx.payload.monitoring_clusters.aggregations.by_cluster.buckets) {\n  String uuid = (String)b.key;\n  String name = b.cluster_name.buckets.size() > 0 ? (String)b.cluster_name.buckets[0].key : uuid;\n\n  Map ex  = existing.containsKey(uuid)  ? (Map)existing[uuid]  : new HashMap();\n  Map cap = capacityMap.containsKey(uuid) ? (Map)capacityMap[uuid] : new HashMap();\n\n  long diskTotal = cap.containsKey('disk_total_bytes') ? ((Number)cap['disk_total_bytes']).longValue() * 85L / 100L : 0L;\n  long heapMax   = cap.containsKey('heap_max_bytes')   ? ((Number)cap['heap_max_bytes']).longValue()   : 0L;\n  int  nodeCount = cap.containsKey('node_count')       ? ((Number)cap['node_count']).intValue()        : 0;\n\n  int shardMax = heapMax > 0L\n    ? (int)Math.round((double)heapMax / 1073741824.0 * 20.0)\n    : 1000;\n\n  long queueThresh = 200L;\n\n  Map c = new HashMap();\n  c['cluster_uuid']            = uuid;\n  c['cluster_id']              = ex.containsKey('cluster_id')            ? (String)ex['cluster_id']            : uuid;\n  c['cluster_name']            = ex.containsKey('cluster_name')           ? (String)ex['cluster_name']           : name;\n  c['dc']                      = dcMap.containsKey(uuid)                 ? (String)dcMap[uuid]                 : (ex.containsKey('dc') ? (String)ex['dc'] : '');\n  c['disk_total_bytes']        = diskTotal;\n  c['heap_max_bytes']          = heapMax;\n  c['node_count']             = nodeCount;\n  c['shard_max_threshold']    = shardMax;\n  c['write_queue_threshold']  = queueThresh;\n  c['active']                  = ex.containsKey('active') ? (boolean)ex['active'] : true;\n  if (ex.containsKey('ingest_hosts'))            c['ingest_hosts']            = (String)ex['ingest_hosts'];\n  if (ex.containsKey('ingest_capacity_per_day')) c['ingest_capacity_per_day'] = ((Number)ex['ingest_capacity_per_day']).longValue();\n  clusters.add(c);\n}\n\nMap out = new HashMap();\nout['clusters'] = clusters;\nreturn out;",
+          "lang": "painless"
+        }
+      },
+      "actions": {
+        "bulk_upsert": {
+          "webhook": {
+            "scheme": "https",
+            "host": "YOUR_ES_HOST",
+            "port": 443,
+            "method": "post",
+            "path": "/_bulk",
+            "params": {},
+            "headers": {
+              "Content-Type": "application/x-ndjson",
+              "Authorization": "ApiKey YOUR_API_KEY"
+            },
+            "body": "{{#ctx.payload.clusters}}{\"index\":{\"_index\":\"cpm-cluster-registry\",\"_id\":\"{{{cluster_uuid}}}\"}}\n{\"cluster_uuid\":\"{{{cluster_uuid}}}\",\"cluster_id\":\"{{{cluster_id}}}\",\"cluster_name\":\"{{{cluster_name}}}\",\"dc\":\"{{{dc}}}\",\"disk_total_bytes\":{{disk_total_bytes}},\"heap_max_bytes\":{{heap_max_bytes}},\"node_count\":{{node_count}},\"shard_max_threshold\":{{shard_max_threshold}},\"write_queue_threshold\":{{write_queue_threshold}},\"active\":{{active}}{{#ingest_hosts}},\"ingest_hosts\":\"{{{.}}}\"{{/ingest_hosts}}{{#ingest_capacity_per_day}},\"ingest_capacity_per_day\":{{.}}{{/ingest_capacity_per_day}}}\n{{/ctx.payload.clusters}}"
+          }
+        }
+      }
+    },
+    "cpm-pipeline-manager": {
+      "trigger": {
+        "schedule": {
+          "cron": "0 59 23 31 2 ?"
+        }
+      },
+      "input": {
+        "chain": {
+          "inputs": [
+            {
+              "state": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      "cpm-pipeline-state"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 500
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "registry": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      "cpm-cluster-registry"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 20,
+                      "query": {
+                        "term": {
+                          "active": true
+                        }
+                      },
+                      "_source": [
+                        "cluster_id",
+                        "cluster_uuid",
+                        "cluster_name",
+                        "ingest_hosts",
+                        "dc"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "template_dedicated": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      "cpm-pipeline-templates"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 1,
+                      "query": {
+                        "term": {
+                          "_id": "dedicated"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "template_catchall": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      "cpm-pipeline-templates"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 1,
+                      "query": {
+                        "term": {
+                          "_id": "catchall"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "condition": {
+        "always": {}
+      },
+      "transform": {
+        "script": {
+          "source": "// ====== CPM Pipeline Pusher ======\n// Reads state from cpm-pipeline-state, renders pipeline configs, and pushes to Logstash\n\n// JSON-escape helper characters\nString BS  = Character.toString((char)92);\nString DQ  = Character.toString((char)34);\nString NL  = Character.toString((char)10);\nString CR  = Character.toString((char)13);\nString TAB = Character.toString((char)9);\n\nString ts = ctx.execution_time.toString();\n\n// Build registry map\nMap registryMap = new HashMap();\nfor (def hit : ctx.payload.registry.hits.hits) {\n  Map src = hit._source;\n  String cid = (String)src.cluster_id;\n  Map m = new HashMap();\n  m.put('cluster_id', cid);\n  m.put('cluster_uuid', (String)src.cluster_uuid);\n  m.put('cluster_name', src.cluster_name != null ? (String)src.cluster_name : '');\n  m.put('ingest_hosts', src.ingest_hosts != null ? (String)src.ingest_hosts : '');\n  m.put('dc', src.dc != null ? (String)src.dc : '');\n  registryMap.put(cid, m);\n}\n\n// Read templates from search results\nString kafkaBootstrap = 'kafka:9092';\nString dedicatedTpl = '';\nlong dedicatedConsumerThreads = 1;\nMap dedicatedSettings = new HashMap();\nif (ctx.payload.template_dedicated.hits.total > 0) {\n  for (def hit : ctx.payload.template_dedicated.hits.hits) {\n    if ('dedicated'.equals((String)hit._id)) {\n      dedicatedTpl = (String)hit._source.template;\n      def ct = hit._source.consumer_threads;\n      if (ct != null) dedicatedConsumerThreads = ct;\n      def kb = hit._source.kafka_bootstrap;\n      if (kb != null) kafkaBootstrap = (String)kb;\n      def ps = hit._source.pipeline_settings;\n      if (ps != null) dedicatedSettings = (Map)ps;\n      break;\n    }\n  }\n}\nString catchallTpl = '';\nlong catchallConsumerThreads = 1;\nMap catchallSettings = new HashMap();\nif (ctx.payload.template_catchall.hits.total > 0) {\n  for (def hit : ctx.payload.template_catchall.hits.hits) {\n    if ('catchall'.equals((String)hit._id)) {\n      catchallTpl = (String)hit._source.template;\n      def ct = hit._source.consumer_threads;\n      if (ct != null) catchallConsumerThreads = ct;\n      def ps = hit._source.pipeline_settings;\n      if (ps != null) catchallSettings = (Map)ps;\n      break;\n    }\n  }\n}\n\n// Group state entries by pipeline_id\nMap pipelineGroups = new HashMap();    // pipeline_id -> List of state entries\nMap pipelineTypes = new HashMap();     // pipeline_id -> 'dedicated' or 'catchall'\nMap pipelineClusters = new HashMap();  // pipeline_id -> cluster_id\nMap pipelineDcs = new HashMap();      // pipeline_id -> dc\n\nfor (def hit : ctx.payload.state.hits.hits) {\n  Map src = hit._source;\n  String pid = (String)src.pipeline_id;\n  String ptype = (String)src.pipeline_type;\n  String cid = (String)src.cluster_id;\n  String dc = src.dc != null ? (String)src.dc : 'default';\n\n  if (!pipelineGroups.containsKey(pid)) {\n    pipelineGroups.put(pid, new ArrayList());\n    pipelineTypes.put(pid, ptype);\n    pipelineClusters.put(pid, cid);\n    pipelineDcs.put(pid, dc);\n  }\n  ((List)pipelineGroups.get(pid)).add(src);\n}\n\n// Build pipelines\nList pipelines = new ArrayList();\n\nfor (def entry : pipelineGroups.entrySet()) {\n  String pid = (String)entry.getKey();\n  List entries = (List)entry.getValue();\n  String ptype = (String)pipelineTypes.get(pid);\n  String cid = (String)pipelineClusters.get(pid);\n  String dc = (String)pipelineDcs.get(pid);\n\n  Map cluster = (Map)registryMap.get(cid);\n  if (cluster == null) continue;\n  String ingestHosts = (String)cluster.get('ingest_hosts');\n  if (ingestHosts == null || ingestHosts.isEmpty()) continue;\n  String clusterName = (String)cluster.get('cluster_name');\n  if (clusterName == null || clusterName.isEmpty()) clusterName = cid;\n  String groupId = 'cpm-' + clusterName;\n\n  String esHostsStr = DQ + ingestHosts.replace(',', ':9200' + DQ + ',' + DQ) + ':9200' + DQ;\n  String apiKeyVar = 'ES_API_KEY_' + cid.toUpperCase().replace('-', '_');\n\n  String config;\n  String description;\n\n  if ('dedicated'.equals(ptype)) {\n    // Dedicated: single dataset pipeline\n    Map first = (Map)entries.get(0);\n    String dataset = (String)first.dataset;\n    String namespace = first.namespace != null ? (String)first.namespace : 'default';\n    String topic = dataset + '-' + namespace;\n\n    config = dedicatedTpl\n      .replace('__KAFKA_BOOTSTRAP__', kafkaBootstrap)\n      .replace('__TOPIC__', topic)\n      .replace('__PIPELINE_ID__', pid)\n      .replace('__GROUP_ID__', groupId)\n      .replace('__CONSUMER_THREADS__', String.valueOf(dedicatedConsumerThreads))\n      .replace('__ES_HOSTS__', esHostsStr)\n      .replace('__DATASET__', dataset)\n      .replace('__NAMESPACE__', namespace)\n      .replace('__API_KEY_VAR__', apiKeyVar);\n\n    description = 'CPM dedicated pipeline to ' + cid + ' (' + dataset + ')';\n  } else {\n    // Catchall: multiple topics\n    String topicsList = '';\n    for (int ti = 0; ti < entries.size(); ti++) {\n      Map e = (Map)entries.get(ti);\n      String topic = (String)e.topic;\n      if (ti > 0) topicsList = topicsList + ', ';\n      topicsList = topicsList + DQ + topic + DQ;\n    }\n\n    config = catchallTpl\n      .replace('__KAFKA_BOOTSTRAP__', kafkaBootstrap)\n      .replace('__TOPICS_LIST__', topicsList)\n      .replace('__CLUSTER_ID__', cid)\n      .replace('__GROUP_ID__', groupId)\n      .replace('__CONSUMER_THREADS__', String.valueOf(catchallConsumerThreads))\n      .replace('__ES_HOSTS__', esHostsStr)\n      .replace('__API_KEY_VAR__', apiKeyVar);\n\n    description = 'CPM catch-all pipeline for ' + cid + ' (' + entries.size() + ' datasets)';\n  }\n\n  // Build pipeline_settings from template (numbers unquoted, strings quoted)\n  Map settings = 'dedicated'.equals(ptype) ? dedicatedSettings : catchallSettings;\n  String settingsStr = '';\n  int si = 0;\n  for (def se : settings.entrySet()) {\n    String skey = (String)se.getKey();\n    def sval = se.getValue();\n    if (si > 0) settingsStr = settingsStr + ',';\n    if (sval instanceof Number) {\n      settingsStr = settingsStr + DQ + skey + DQ + ':' + String.valueOf(sval);\n    } else {\n      settingsStr = settingsStr + DQ + skey + DQ + ':' + DQ + String.valueOf(sval) + DQ;\n    }\n    si++;\n  }\n\n  String esc = config.replace(BS, BS + BS).replace(DQ, BS + DQ).replace(NL, BS + 'n').replace(CR, BS + 'r').replace(TAB, BS + 't');\n\n  String body = '{' +\n    DQ + 'description' + DQ + ':' + DQ + description + DQ + ',' +\n    DQ + 'last_modified' + DQ + ':' + DQ + ts + DQ + ',' +\n    DQ + 'pipeline_metadata' + DQ + ':{' + DQ + 'type' + DQ + ':' + DQ + 'logstash_pipeline' + DQ + ',' + DQ + 'version' + DQ + ':1},' +\n    DQ + 'pipeline' + DQ + ':' + DQ + esc + DQ + ',' +\n    DQ + 'pipeline_settings' + DQ + ':{' + settingsStr + '},' +\n    DQ + 'username' + DQ + ':' + DQ + 'cpm' + DQ +\n    '}';\n\n  Map p = new HashMap();\n  p.put('pipeline_id', pid);\n  p.put('body', body);\n  pipelines.add(p);\n}\n\nMap out = new HashMap();\nout.put('pipelines', pipelines);\nreturn out;",
+          "lang": "painless"
+        }
+      },
+      "actions": {
+        "push_pipelines": {
+          "foreach": "ctx.payload.pipelines",
+          "max_iterations": 20,
+          "webhook": {
+            "scheme": "https",
+            "host": "YOUR_ES_HOST",
+            "port": 443,
+            "method": "put",
+            "path": "/_logstash/pipeline/{{ctx.payload.pipeline_id}}",
+            "params": {},
+            "headers": {
+              "Content-Type": "application/json",
+              "Authorization": "ApiKey YOUR_API_KEY"
+            },
+            "body": "{{{ctx.payload.body}}}"
+          }
+        }
+      }
+    },
+    "cpm-state-manager": {
+      "trigger": {
+        "schedule": {
+          "cron": "0 15 0 * * ?"
+        }
+      },
+      "input": {
+        "chain": {
+          "inputs": [
+            {
+              "routing_suggestions": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      "cpm-routing-suggestions"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 10,
+                      "sort": [
+                        {
+                          "suggested_at": {
+                            "order": "desc"
+                          }
+                        }
+                      ],
+                      "_source": [
+                        "dataset",
+                        "namespace",
+                        "suggested_cluster_id",
+                        "source_score",
+                        "target_score",
+                        "event_rate_1h",
+                        "suggested_at"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "registry": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      "cpm-cluster-registry"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 20,
+                      "query": {
+                        "term": {
+                          "active": true
+                        }
+                      },
+                      "_source": [
+                        "cluster_id",
+                        "cluster_uuid",
+                        "cluster_name",
+                        "ingest_hosts",
+                        "dc"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "dataset_rates": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      ".monitoring-es-8-*"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 0,
+                      "query": {
+                        "bool": {
+                          "filter": [
+                            {
+                              "match_phrase": {
+                                "event.dataset": "elasticsearch.index"
+                              }
+                            },
+                            {
+                              "range": {
+                                "@timestamp": {
+                                  "gte": "now-2h"
+                                }
+                              }
+                            },
+                            {
+                              "bool": {
+                                "should": [
+                                  {
+                                    "wildcard": {
+                                      "elasticsearch.index.name": ".ds-logs-*"
+                                    }
+                                  }
+                                ],
+                                "minimum_should_match": 1
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "aggs": {
+                        "by_cluster": {
+                          "terms": {
+                            "field": "cluster_uuid",
+                            "size": 10
+                          },
+                          "aggs": {
+                            "by_index": {
+                              "terms": {
+                                "field": "elasticsearch.index.name",
+                                "size": 500
+                              },
+                              "aggs": {
+                                "over_time": {
+                                  "date_histogram": {
+                                    "field": "@timestamp",
+                                    "fixed_interval": "1h"
+                                  },
+                                  "aggs": {
+                                    "max_total": {
+                                      "max": {
+                                        "field": "elasticsearch.index.total.indexing.index_total"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "existing_state": {
+                "search": {
+                  "request": {
+                    "search_type": "query_then_fetch",
+                    "indices": [
+                      "cpm-pipeline-state"
+                    ],
+                    "rest_total_hits_as_int": true,
+                    "body": {
+                      "size": 500
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "condition": {
+        "always": {}
+      },
+      "transform": {
+        "script": {
+          "source": "// ====== CPM Pipeline Manager (State Builder) ======\n// Computes desired state: which dataset goes to which cluster/pipeline\n// Outputs: state entries written to cpm-pipeline-state\n\n// Timestamp\nString ts = ctx.execution_time.toString();\n\n// Build registry map: cluster_id -> {cluster_uuid, cluster_name, ingest_hosts, dc}\nMap registryMap = new HashMap();\nfor (def hit : ctx.payload.registry.hits.hits) {\n  Map src = hit._source;\n  String cid = (String)src.cluster_id;\n  Map m = new HashMap();\n  m.put('cluster_id', cid);\n  m.put('cluster_uuid', (String)src.cluster_uuid);\n  m.put('cluster_name', src.cluster_name != null ? (String)src.cluster_name : '');\n  m.put('ingest_hosts', src.ingest_hosts != null ? (String)src.ingest_hosts : '');\n  m.put('dc', src.dc != null ? (String)src.dc : '');\n  registryMap.put(cid, m);\n}\n\n// ====== DEDICATED PIPELINES (from routing suggestions) ======\nList stateEntries = new ArrayList();\nSet managedTopics = new HashSet();\nSet seenClusters = new HashSet();\n\ndef sugDocs = ctx.payload.routing_suggestions.hits.hits;\nfor (def hit : sugDocs) {\n  Map src = hit._source;\n  String dataset    = (String)src.dataset;\n  String namespace  = src.namespace != null ? (String)src.namespace : 'default';\n  String sugCluster = (String)src.suggested_cluster_id;\n\n  if (seenClusters.contains(sugCluster)) continue;\n  seenClusters.add(sugCluster);\n\n  Map cluster = (Map)registryMap.get(sugCluster);\n  if (cluster == null) continue;\n  String dc = (String)cluster.get('dc');\n  if (dc == null || dc.isEmpty()) dc = 'default';\n\n  String topic = dataset + '-' + namespace;\n  String pipelineId = dc + '_cpm-dedicated-' + sugCluster;\n  managedTopics.add(topic);\n\n  Map st = new HashMap();\n  st.put('dataset', dataset);\n  st.put('namespace', namespace);\n  st.put('pipeline_type', 'dedicated');\n  st.put('pipeline_id', pipelineId);\n  st.put('cluster_id', sugCluster);\n  st.put('dc', dc);\n  st.put('topic', topic);\n  st.put('updated_at', ts);\n  stateEntries.add(st);\n}\n\n// ====== READ EXISTING STATE (source of truth for catchall assignments) ======\nMap stateCatchallTopics = new HashMap();\nSet stateAllTopics = new HashSet();\n\nif (ctx.payload.existing_state != null && ctx.payload.existing_state.hits != null) {\n  for (def hit : ctx.payload.existing_state.hits.hits) {\n    Map src = hit._source;\n    String ptype = (String)src.pipeline_type;\n    String topic = (String)src.topic;\n    String cid = (String)src.cluster_id;\n\n    if ('dedicated'.equals(ptype)) continue;\n    if (managedTopics.contains(topic)) continue;\n\n    if (!stateCatchallTopics.containsKey(cid)) {\n      stateCatchallTopics.put(cid, new ArrayList());\n    }\n    ((List)stateCatchallTopics.get(cid)).add(topic);\n    stateAllTopics.add(topic);\n  }\n}\n\n// ====== DISCOVER NEW DATASETS FROM MONITORING (fallback) ======\nMap datasetClusterMap = new HashMap();\ndef rateBuckets = ctx.payload.dataset_rates.aggregations.by_cluster.buckets;\nfor (def cb : rateBuckets) {\n  String uuid = (String)cb.key;\n  for (def ib : cb.by_index.buckets) {\n    String iname = (String)ib.key;\n    if (!iname.startsWith('.ds-logs-')) continue;\n    String afterDs = iname.substring(4);\n    String idx = afterDs;\n    int p = idx.lastIndexOf('-'); if (p <= 0) continue;\n    idx = idx.substring(0, p);\n    p = idx.lastIndexOf('-'); if (p <= 0) continue;\n    idx = idx.substring(0, p);\n    int fd = idx.indexOf('-'); if (fd <= 0) continue;\n    String rest = idx.substring(fd + 1);\n    int nd = rest.lastIndexOf('-'); if (nd <= 0) continue;\n    String dataset = rest.substring(0, nd);\n    String ns = rest.substring(nd + 1);\n    String topic = dataset + '-' + ns;\n    if (managedTopics.contains(topic)) continue;\n    if (stateAllTopics.contains(topic)) continue;\n    Map cl = (Map)registryMap.get(uuid);\n    if (cl != null) {\n      Map dm = new HashMap();\n      dm.put('cluster_id', (String)cl.get('cluster_id'));\n      dm.put('namespace', ns);\n      datasetClusterMap.put(dataset, dm);\n    }\n  }\n}\n\n// ====== MERGE: state + new monitoring data ======\nMap clusterTopics = new HashMap(stateCatchallTopics);\nfor (def entry : datasetClusterMap.entrySet()) {\n  String dataset = (String)entry.getKey();\n  Map dm = (Map)entry.getValue();\n  String cid = (String)dm.get('cluster_id');\n  String ns = (String)dm.get('namespace');\n  String topic = dataset + '-' + ns;\n  if (!clusterTopics.containsKey(cid)) {\n    clusterTopics.put(cid, new ArrayList());\n  }\n  ((List)clusterTopics.get(cid)).add(topic);\n}\n\n// ====== CATCHALL STATE ENTRIES ======\nfor (def ctEntry : clusterTopics.entrySet()) {\n  String cid = (String)ctEntry.getKey();\n  List topics = (List)ctEntry.getValue();\n  Map cluster = (Map)registryMap.get(cid);\n  if (cluster == null) continue;\n  String dc = (String)cluster.get('dc');\n  if (dc == null || dc.isEmpty()) dc = 'default';\n  String pipelineId = dc + '_cpm-catchall-' + cid;\n\n  for (int si = 0; si < topics.size(); si++) {\n    String topic = (String)topics.get(si);\n    int lastDash = topic.lastIndexOf('-');\n    String dsName = lastDash > 0 ? topic.substring(0, lastDash) : topic;\n    String ns = lastDash > 0 ? topic.substring(lastDash + 1) : 'default';\n    Map st = new HashMap();\n    st.put('dataset', dsName);\n    st.put('namespace', ns);\n    st.put('pipeline_type', 'catchall');\n    st.put('pipeline_id', pipelineId);\n    st.put('cluster_id', cid);\n    st.put('dc', dc);\n    st.put('topic', topic);\n    st.put('updated_at', ts);\n    stateEntries.add(st);\n  }\n}\n\nMap out = new HashMap();\nout.put('state', stateEntries);\nreturn out;",
+          "lang": "painless"
+        }
+      },
+      "actions": {
+        "index_state": {
+          "foreach": "ctx.payload.state",
+          "max_iterations": 200,
+          "webhook": {
+            "scheme": "https",
+            "host": "YOUR_ES_HOST",
+            "port": 443,
+            "method": "put",
+            "path": "/cpm-pipeline-state/_doc/{{ctx.payload.dataset}}-{{ctx.payload.namespace}}",
+            "params": {},
+            "headers": {
+              "Content-Type": "application/json",
+              "Authorization": "ApiKey YOUR_API_KEY"
+            },
+            "body": "{{#toJson}}ctx.payload{{/toJson}}"
+          }
+        }
+      }
+    }
+  },
+  "mappings": {
+    "cpm-cluster-registry": {
+      "dynamic": "strict",
+      "properties": {
+        "active": {
+          "type": "boolean"
+        },
+        "cluster_id": {
+          "type": "keyword"
+        },
+        "cluster_name": {
+          "type": "keyword"
+        },
+        "cluster_uuid": {
+          "type": "keyword"
+        },
+        "disk_total_bytes": {
+          "type": "long"
+        },
+        "heap_max_bytes": {
+          "type": "long"
+        },
+        "ingest_hosts": {
+          "type": "keyword"
+        },
+        "ingest_capacity_per_day": {
+          "type": "long"
+        },
+        "node_count": {
+          "type": "integer"
+        },
+        "shard_max_threshold": {
+          "type": "integer"
+        },
+        "write_queue_threshold": {
+          "type": "long"
+        },
+        "dc": {
+          "type": "keyword"
+        }
+      }
+    },
+    "cpm-routing-config": {
+      "dynamic": "strict",
+      "properties": {
+        "cluster_id": {
+          "type": "keyword"
+        },
+        "dataset": {
+          "type": "keyword"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "previous_cluster_id": {
+          "type": "keyword"
+        },
+        "updated_at": {
+          "type": "date",
+          "format": "strict_date_optional_time"
+        },
+        "updated_by": {
+          "type": "keyword"
+        }
+      }
+    },
+    "cpm-scores": {
+      "dynamic": "strict",
+      "properties": {
+        "clusters": {
+          "type": "nested",
+          "dynamic": "strict",
+          "properties": {
+            "alert": {
+              "type": "boolean"
+            },
+            "cluster_id": {
+              "type": "keyword"
+            },
+            "cluster_uuid": {
+              "type": "keyword"
+            },
+            "disk_score": {
+              "type": "float"
+            },
+            "disk_used_pct_current": {
+              "type": "float"
+            },
+            "disk_used_pct_forecast": {
+              "type": "float"
+            },
+            "jvm_heap_pct_forecast": {
+              "type": "float"
+            },
+            "jvm_score": {
+              "type": "float"
+            },
+            "shard_count_forecast": {
+              "type": "long"
+            },
+            "shard_score": {
+              "type": "float"
+            },
+            "total_score": {
+              "type": "float"
+            }
+          }
+        },
+        "forecast_horizon_hours": {
+          "type": "integer"
+        },
+        "scored_at": {
+          "type": "date",
+          "format": "strict_date_optional_time"
+        }
+      }
+    },
+    "cpm-bytes-per-event": {
+      "dynamic": "strict",
+      "properties": {
+        "bytes_per_event": {
+          "type": "double"
+        },
+        "computed_at": {
+          "type": "date",
+          "format": "strict_date_optional_time"
+        },
+        "sample_end": {
+          "type": "date",
+          "format": "strict_date_optional_time"
+        },
+        "sample_start": {
+          "type": "date",
+          "format": "strict_date_optional_time"
+        },
+        "total_disk_delta_bytes": {
+          "type": "long"
+        },
+        "total_events": {
+          "type": "long"
+        },
+        "window_days": {
+          "type": "integer"
+        }
+      }
+    },
+    "cpm-routing-suggestions": {
+      "dynamic": "strict",
+      "properties": {
+        "suggested_at": {
+          "type": "date"
+        },
+        "clusters_total": {
+          "type": "integer"
+        },
+        "threshold_used": {
+          "type": "float"
+        },
+        "dataset": {
+          "type": "keyword"
+        },
+        "namespace": {
+          "type": "keyword"
+        },
+        "source_cluster": {
+          "type": "keyword"
+        },
+        "source_cluster_id": {
+          "type": "keyword"
+        },
+        "source_score": {
+          "type": "float"
+        },
+        "suggested_cluster_id": {
+          "type": "keyword"
+        },
+        "target_score": {
+          "type": "float"
+        },
+        "event_rate_1h": {
+          "type": "long"
+        },
+        "reason": {
+          "type": "keyword"
+        },
+        "suggestions": {
+          "type": "nested",
+          "properties": {
+            "current_cluster_id": {
+              "type": "keyword"
+            },
+            "dataset": {
+              "type": "keyword"
+            },
+            "event_rate_1h": {
+              "type": "long"
+            },
+            "locked": {
+              "type": "boolean"
+            },
+            "namespace": {
+              "type": "keyword"
+            },
+            "overloaded_cluster": {
+              "type": "keyword"
+            },
+            "overloaded_score": {
+              "type": "float"
+            },
+            "reason": {
+              "type": "keyword"
+            },
+            "suggested_cluster_id": {
+              "type": "keyword"
+            },
+            "target_score": {
+              "type": "float"
+            }
+          }
+        }
+      }
+    },
+    "cpm-pipeline-templates": {
+      "dynamic": "strict",
+      "properties": {
+        "name": {
+          "type": "keyword"
+        },
+        "template": {
+          "type": "text"
+        },
+        "description": {
+          "type": "keyword"
+        },
+        "default_cluster_id": {
+          "type": "keyword"
+        },
+        "kafka_bootstrap": {
+          "type": "keyword"
+        },
+        "pipeline_settings": {
+          "type": "object",
+          "dynamic": true
+        }
+      }
+    },
+    "cpm-pipeline-state": {
+      "dynamic": "strict",
+      "properties": {
+        "dataset": {
+          "type": "keyword"
+        },
+        "namespace": {
+          "type": "keyword"
+        },
+        "pipeline_type": {
+          "type": "keyword"
+        },
+        "pipeline_id": {
+          "type": "keyword"
+        },
+        "cluster_id": {
+          "type": "keyword"
+        },
+        "topic": {
+          "type": "keyword"
+        },
+        "updated_at": {
+          "type": "date"
+        },
+        "dc": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}
