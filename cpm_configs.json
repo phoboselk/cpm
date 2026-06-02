@@ -533,7 +533,7 @@
             "params": {},
             "headers": {
               "Content-Type": "application/json",
-              "Authorization": "::es_redacted::"
+              "Authorization": "ApiKey YOUR_API_KEY"
             },
             "body": "{\"duration\":\"24h\",\"expires_in\":\"48h\"}"
           }
@@ -548,7 +548,7 @@
             "params": {},
             "headers": {
               "Content-Type": "application/json",
-              "Authorization": "::es_redacted::"
+              "Authorization": "ApiKey YOUR_API_KEY"
             },
             "body": "{\"duration\":\"24h\",\"expires_in\":\"48h\"}"
           }
@@ -563,7 +563,7 @@
             "params": {},
             "headers": {
               "Content-Type": "application/json",
-              "Authorization": "::es_redacted::"
+              "Authorization": "ApiKey YOUR_API_KEY"
             },
             "body": "{\"duration\":\"24h\",\"expires_in\":\"48h\"}"
           }
@@ -578,7 +578,7 @@
             "params": {},
             "headers": {
               "Content-Type": "application/json",
-              "Authorization": "::es_redacted::"
+              "Authorization": "ApiKey YOUR_API_KEY"
             },
             "body": "{\"duration\":\"24h\",\"expires_in\":\"48h\"}"
           }
