@@ -1520,6 +1520,32 @@
       }
     }
   },
+  "templates": {
+    "dedicated": {
+      "name": "dedicated",
+      "description": "Per-dataset Logstash pipeline managed by CPM",
+      "kafka_bootstrap": "kafka:9092",
+      "consumer_threads": 1,
+      "pipeline_settings": {
+        "pipeline.workers": 2,
+        "pipeline.batch.size": 125,
+        "queue.type": "persisted"
+      },
+      "template": "input {\n  kafka {\n    bootstrap_servers => \"__KAFKA_BOOTSTRAP__\"\n    topics => [\"__TOPIC__\"]\n    group_id => \"__GROUP_ID__\"\n    consumer_threads => __CONSUMER_THREADS__\n    codec => json\n    decorate_events => true\n  }\n}\n\noutput {\n  elasticsearch {\n    hosts => [__ES_HOSTS__]\n    user => \"elastic\"\n    password => \"${ELASTIC_PASSWORD}\"\n    ssl_certificate_verification => true\n    cacert => \"/usr/share/logstash/config/certs/ca/ca.crt\"\n    data_stream => true\n    data_stream_type => \"logs\"\n    data_stream_dataset => \"__DATASET__\"\n    data_stream_namespace => \"__NAMESPACE__\"\n  }\n}\n"
+    },
+    "catchall": {
+      "name": "catchall",
+      "description": "Multi-topic catch-all Logstash pipeline managed by CPM",
+      "kafka_bootstrap": "kafka:9092",
+      "consumer_threads": 1,
+      "pipeline_settings": {
+        "pipeline.workers": 2,
+        "pipeline.batch.size": 125,
+        "queue.type": "persisted"
+      },
+      "template": "input {\n  kafka {\n    bootstrap_servers => \"__KAFKA_BOOTSTRAP__\"\n    topics => [__TOPICS_LIST__]\n    group_id => \"__GROUP_ID__\"\n    consumer_threads => __CONSUMER_THREADS__\n    codec => json\n    decorate_events => true\n  }\n}\n\noutput {\n  elasticsearch {\n    hosts => [__ES_HOSTS__]\n    user => \"elastic\"\n    password => \"${ELASTIC_PASSWORD}\"\n    ssl_certificate_verification => true\n    cacert => \"/usr/share/logstash/config/certs/ca/ca.crt\"\n    data_stream => true\n  }\n}\n"
+    }
+  },
   "mappings": {
     "cpm-cluster-registry": {
       "dynamic": "strict",
@@ -1617,6 +1643,9 @@
             "jvm_score": {
               "type": "float"
             },
+            "load_score": {
+              "type": "float"
+            },
             "shard_count_forecast": {
               "type": "long"
             },
@@ -1624,6 +1653,9 @@
               "type": "float"
             },
             "total_score": {
+              "type": "float"
+            },
+            "write_queue_forecast": {
               "type": "float"
             }
           }
@@ -1759,6 +1791,9 @@
         },
         "kafka_bootstrap": {
           "type": "keyword"
+        },
+        "consumer_threads": {
+          "type": "integer"
         },
         "pipeline_settings": {
           "type": "object",

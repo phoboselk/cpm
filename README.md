@@ -35,6 +35,17 @@ Autonomous multi-cluster routing for Elasticsearch. CPM monitors cluster health 
    GET cpm-scores/_search?sort=scored_at:desc&size=1
    ```
 
+6. Set `cluster_registry` ingest_hosts in `cpm_settings.json` (see `cpm_settings.json.example`).
+
+7. Bootstrap routing and push Logstash pipelines:
+   ```
+   python3 cpm_install.py --bootstrap
+   ```
+   Or for the Docker stack only:
+   ```
+   python3 docker/scripts/bootstrap_cpm_pipelines.py
+   ```
+
 ## CLI Options
 
 | Flag | Description |

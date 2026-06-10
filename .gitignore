@@ -9,3 +9,9 @@ __pycache__/
 
 # Secrets - never commit real credentials
 cpm_settings.json
+docker-ca.crt
+
+# TLS certificates and keys
+*.crt
+*.pem
+*.key
