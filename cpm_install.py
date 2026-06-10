@@ -9,6 +9,7 @@ Usage:
 
 import json, re, sys, os, time, argparse
 from datetime import datetime, timezone, timedelta
+from urllib.parse import urlparse
 import requests
 
 # ── Load settings ─────────────────────────────────────────
@@ -20,6 +21,8 @@ p.add_argument("-configs", default="cpm_configs.json", help="Path to cpm_configs
 p.add_argument("-settings", default="cpm_settings.json", help="Path to settings file")
 p.add_argument("-start", default=None, help="Datafeed start ISO8601 (default: now-2d)")
 p.add_argument("--clean", action="store_true", help="Delete and recreate config indices")
+p.add_argument("--bootstrap", action="store_true",
+               help="After install: patch registry, seed templates, run routing/state/pipeline watchers")
 args = p.parse_args()
 
 SETTINGS_PATH = args.settings
@@ -37,7 +40,12 @@ if not ES or not KEY:
     print(f"Error: es_host and es_api_key must be provided via -url/-key flags or in {SETTINGS_PATH}.")
     sys.exit(1)
 
-ES  = ES.rstrip("/")
+if not ES.startswith(("http://", "https://")):
+    ES = f"https://{ES}"
+ES = ES.rstrip("/")
+_es = urlparse(ES)
+ES_HOSTNAME = _es.hostname or "localhost"
+ES_PORT = _es.port or (443 if _es.scheme == "https" else 80)
 H   = {"Authorization": f"ApiKey {KEY}", "Content-Type": "application/json"}
 
 with open(args.configs) as f:
@@ -92,32 +100,42 @@ if r and r["hits"]["hits"]:
 
 print("\n  [0b] JVM heap field...")
 HEAP = None
-r = req("POST", f"/{MON}/_search", {
-    "size": 1,
-    "query": {"bool": {"filter": [{"match_phrase": {"event.dataset": "elasticsearch.node.stats"}}]}},
-    "_source": ["node_stats.jvm.mem.heap_used_percent",
-                "elasticsearch.node.stats.jvm.mem.heap_used_percent"]
-})
-if r and r["hits"]["hits"]:
-    src = r["hits"]["hits"][0]["_source"]
-    HEAP = ("node_stats.jvm.mem.heap_used_percent"
-            if "node_stats" in src
-            else "elasticsearch.node.stats.jvm.mem.heap_used_percent")
+HEAP_CANDIDATES = [
+    "elasticsearch.node.stats.jvm.mem.heap.used.pct",
+    "node_stats.jvm.mem.heap.used.pct",
+    "elasticsearch.node.stats.jvm.mem.heap_used_percent",
+    "node_stats.jvm.mem.heap_used_percent",
+]
+for field in HEAP_CANDIDATES:
+    r = req("POST", f"/{MON}/_search", {
+        "size": 0,
+        "query": {"bool": {"filter": [{"match_phrase": {"event.dataset": "elasticsearch.node.stats"}}]}},
+        "aggs": {"probe": {"max": {"field": field}}},
+    })
+    if r and r.get("aggregations", {}).get("probe", {}).get("value") is not None:
+        HEAP = field
+        break
+if HEAP:
     ok(f"heap field: {HEAP}")
 
 print("\n  [0c] Shard count field...")
 SHARDS = None
-r = req("POST", f"/{MON}/_search", {
-    "size": 1,
-    "query": {"bool": {"filter": [{"match_phrase": {"event.dataset": "elasticsearch.cluster.stats"}}]}},
-    "_source": ["cluster_stats.indices.shards.total",
-                "elasticsearch.cluster.stats.indices.shards.total"]
-})
-if r and r["hits"]["hits"]:
-    src = r["hits"]["hits"][0]["_source"]
-    SHARDS = ("cluster_stats.indices.shards.total"
-              if "cluster_stats" in src
-              else "elasticsearch.cluster.stats.indices.shards.total")
+SHARD_CANDIDATES = [
+    "elasticsearch.cluster.stats.indices.shards.count",
+    "cluster_stats.indices.shards.count",
+    "elasticsearch.cluster.stats.indices.shards.total",
+    "cluster_stats.indices.shards.total",
+]
+for field in SHARD_CANDIDATES:
+    r = req("POST", f"/{MON}/_search", {
+        "size": 0,
+        "query": {"bool": {"filter": [{"match_phrase": {"event.dataset": "elasticsearch.cluster.stats"}}]}},
+        "aggs": {"probe": {"max": {"field": field}}},
+    })
+    if r and r.get("aggregations", {}).get("probe", {}).get("value") is not None:
+        SHARDS = field
+        break
+if SHARDS:
     ok(f"shard field: {SHARDS}")
 
 print("\n  [0d] Write queue field...")
@@ -248,19 +266,124 @@ if args.clean:
 hdr("STEP 5: Watchers (from cpm_configs.json)")
 
 SRC_HOST = bundle["src_host"]
-ES_HOST = ES.replace("https://", "").replace("http://", "").rstrip("/")
 watch_str = json.dumps(bundle["watches"])
-watch_str = watch_str.replace(SRC_HOST, ES_HOST)
+watch_str = watch_str.replace(SRC_HOST, ES_HOSTNAME)
+watch_str = watch_str.replace('"port": 443', f'"port": {ES_PORT}')
 watch_str = watch_str.replace(".monitoring-es-8-*", MON)
 watch_str = re.sub(
     r'"Authorization": "ApiKey [A-Za-z0-9+/=]+"',
     f'"Authorization": "ApiKey {KEY}"',
     watch_str,
 )
+watch_str = watch_str.replace('"Authorization": "ApiKey YOUR_API_KEY"', f'"Authorization": "ApiKey {KEY}"')
 
 for name, cfg in json.loads(watch_str).items():
     r = req("PUT", f"/_watcher/watch/{name}", cfg)
     if r: ok(f"Watch {name} installed")
+
+
+def patch_registry(registry_cfg: dict) -> None:
+    if not registry_cfg:
+        return
+    r = req("POST", "/cpm-cluster-registry/_search", {"size": 50, "query": {"match_all": {}}})
+    if not r:
+        return
+    for hit in r["hits"]["hits"]:
+        src = hit["_source"]
+        name = src.get("cluster_name", "")
+        defaults = registry_cfg.get(name) or registry_cfg.get(src.get("cluster_id", ""))
+        if not defaults:
+            continue
+        doc = {**src, **{k: v for k, v in defaults.items() if v is not None}}
+        if req("PUT", f"/cpm-cluster-registry/_doc/{hit['_id']}?refresh=wait_for", doc):
+            ok(f"Registry {name or hit['_id']}: {', '.join(defaults.keys())}")
+
+
+def ensure_template_mapping() -> None:
+    mapping = bundle.get("mappings", {}).get("cpm-pipeline-templates", {})
+    props = mapping.get("properties", {})
+    extra = {k: v for k, v in props.items() if k in ("consumer_threads",)}
+    if extra:
+        req("PUT", "/cpm-pipeline-templates/_mapping", {"properties": extra}, ok404=True)
+
+
+# ──────────────────────────────────────────────────────────
+# STEP 6: Pipeline templates
+# ──────────────────────────────────────────────────────────
+hdr("STEP 6: Pipeline templates (from cpm_configs.json)")
+
+ensure_template_mapping()
+for tpl_id, tpl in bundle.get("templates", {}).items():
+    r = req("PUT", f"/cpm-pipeline-templates/_doc/{tpl_id}", tpl)
+    if r: ok(f"Template {tpl_id} seeded")
+
+
+# ──────────────────────────────────────────────────────────
+# STEP 7: Cluster registry ingest_hosts / dc
+# ──────────────────────────────────────────────────────────
+hdr("STEP 7: Cluster registry defaults")
+
+REGISTRY_CFG = settings.get("cluster_registry", {})
+if REGISTRY_CFG:
+    patch_registry(REGISTRY_CFG)
+else:
+    inf("No cluster_registry in settings — set ingest_hosts manually or via bootstrap script")
+
+
+def execute_watcher(name):
+    r = req("POST", f"/_watcher/watch/{name}/_execute", {})
+    if not r:
+        return False
+    state = r.get("watch_record", {}).get("status", {}).get("execution_state", "?")
+    ok(f"{name} executed ({state})")
+    return True
+
+
+# ──────────────────────────────────────────────────────────
+# STEP 8: Bootstrap routing → state → pipelines (optional)
+# ──────────────────────────────────────────────────────────
+if args.bootstrap:
+    hdr("STEP 8: Bootstrap CPM pipeline chain")
+    execute_watcher("cpm-registry-sync")
+    patch_registry(REGISTRY_CFG)
+    time.sleep(1)
+    execute_watcher("cpm-scoring")
+    execute_watcher("cpm-routing-advisor")
+    # Preserve beats-raw on central before state-manager merges monitoring datasets
+    central = None
+    r = req("POST", "/cpm-cluster-registry/_search", {
+        "size": 1,
+        "query": {"term": {"cluster_name": "central-cluster"}},
+    })
+    if r and r["hits"]["hits"]:
+        central = r["hits"]["hits"][0]
+    if central:
+        src = central["_source"]
+        dc = src.get("dc") or "dc-central"
+        cid = src["cluster_id"]
+        req("PUT", "/cpm-pipeline-state/_doc/beats-raw", {
+            "dataset": "beats",
+            "namespace": "raw",
+            "pipeline_type": "catchall",
+            "pipeline_id": f"{dc}_cpm-catchall-{cid}",
+            "cluster_id": cid,
+            "dc": dc,
+            "topic": "beats-raw",
+            "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        })
+        ok("Seeded beats-raw on central catchall")
+    execute_watcher("cpm-state-manager")
+    patch_registry(REGISTRY_CFG)
+    execute_watcher("cpm-pipeline-manager")
+
+    r = req("GET", "/_logstash/pipeline")
+    if r:
+        ids = list(r.keys()) if isinstance(r, dict) else []
+        ok(f"Logstash pipelines: {', '.join(ids) if ids else '(none)'}")
+
+    r = req("POST", "/cpm-pipeline-state/_search", {"size": 20})
+    if r:
+        ok(f"Pipeline state entries: {r['hits']['total']['value']}")
 
 
 # ──────────────────────────────────────────────────────────
@@ -279,8 +402,22 @@ print("""
        POST _ml/anomaly_detectors/cpm-store-size/_forecast  {"duration":"24h"}
        POST _ml/anomaly_detectors/cpm-jvm-heap/_forecast    {"duration":"24h"}
        POST _ml/anomaly_detectors/cpm-shard-count/_forecast {"duration":"24h"}
-  4. Test scoring watcher:
+  4. Seed pipeline templates and set cluster ingest_hosts in cpm_settings.json:
+       "cluster_registry": {
+         "central-cluster": {"ingest_hosts": "https://es-central", "dc": "dc-central"},
+         "remote-a":          {"ingest_hosts": "https://es-remote-a", "dc": "dc-a"},
+         "remote-b":          {"ingest_hosts": "https://es-remote-b", "dc": "dc-b"}
+       }
+  5. Bootstrap routing and push Logstash pipelines:
+       python3 cpm_install.py --bootstrap
+     Or manually:
+       POST _watcher/watch/cpm-routing-advisor/_execute
+       POST _watcher/watch/cpm-state-manager/_execute
+       POST _watcher/watch/cpm-pipeline-manager/_execute
+  6. Test scoring watcher:
        POST _watcher/watch/cpm-scoring/_execute
-  5. Verify output:
+  7. Verify output:
        GET cpm-scores/_search?sort=scored_at:desc&size=1
+       GET _logstash/pipeline/
+       GET cpm-pipeline-state/_search?size=20
 """)
