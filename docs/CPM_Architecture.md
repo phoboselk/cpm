@@ -14,6 +14,7 @@ CPM automates the management of Logstash ingest pipelines for multi-cluster Elas
    - [Indices](#indices)
 4. [Execution Schedule](#execution-schedule)
 5. [Pipeline State Model](#pipeline-state-model)
+   - [Data Stream Identity](#data-stream-identity)
 6. [Template System](#template-system)
 7. [Configuration & Deployment](#configuration-deployment)
 8. [Operational Guide](#operational-guide)
@@ -262,9 +263,11 @@ flowchart TD
 
 **Inputs:**
 - `scores` - latest cluster health scores from `cpm-scores`
-- `index_rates` - per-cluster per-index ingest rates from `.monitoring-es-8-*`
+- `index_rates` - per-cluster per-index ingest rates from `.monitoring-es-8-*` (`.ds-logs-*`, `.ds-metrics-*`, `.ds-traces-*`)
 
-**Output:** Bulk writes suggestions to `cpm-routing-suggestions`
+**Parsing:** Backing index names (e.g. `.ds-logs-nginx.access-default-2024.06.17-000001`) are parsed into `data_stream_type`, `dataset`, and `namespace`. Rates are aggregated per `{type}|{dataset}|{namespace}` so logs and metrics with the same dataset name are not merged.
+
+**Output:** Bulk writes suggestions to `cpm-routing-suggestions` with `data_stream_type`, `dataset`, `namespace`, cluster scores, `event_rate_1h`, and `reason`.
 
 #### 5. cpm-state-manager
 
@@ -296,7 +299,7 @@ flowchart TD
 
     M -> OUT["State Entries<br/>(dedicated + catchall)"]
 
-    OUT -> PUT["PUT<br/>cpm-pipeline-state/_doc/{dataset}-{namespace}"]
+    OUT -> PUT["PUT<br/>cpm-pipeline-state/_doc/{type}-{dataset}-{namespace}"]
 
     style ES fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
     style C fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
@@ -345,13 +348,14 @@ flowchart TD
 | Placeholder | Dedicated | Catchall | Source |
 |--|--|--|--|
 | `__KAFKA_BOOTSTRAP__` | Kafka bootstrap servers | Kafka bootstrap servers | Template doc `kafka_bootstrap` field |
-| `__TOPIC__` | Single topic (`dataset-namespace`) | - | State entry |
+| `__TOPIC__` | Single Kafka topic (`{type}-{dataset}-{namespace}`) | - | State entry `topic` |
 | `__TOPICS_LIST__` | - | Comma-separated quoted topic list | State entries |
 | `__PIPELINE_ID__` | Pipeline ID (e.g. `dc_cpm-dedicated-clusterId`) | - | Derived from state |
 | `__CLUSTER_ID__` | - | Cluster ID | State entry |
 | `__GROUP_ID__` | Kafka group ID (`cpm-{clusterName}`) | Kafka group ID (`cpm-{clusterName}`) | Registry `cluster_name` |
 | `__CONSUMER_THREADS__` | Kafka consumer thread count | Kafka consumer thread count | Template doc `consumer_threads` field |
 | `__ES_HOSTS__` | Formatted ES hosts list | Formatted ES hosts list | Registry `ingest_hosts` |
+| `__DATA_STREAM_TYPE__` | Data stream type (`logs`, `metrics`, `traces`) | - | State entry |
 | `__DATASET__` | Data stream dataset | - | State entry |
 | `__NAMESPACE__` | Data stream namespace | - | State entry |
 | `__API_KEY_VAR__` | Keystore variable name | Keystore variable name | Derived from `cluster_id` |
@@ -372,9 +376,9 @@ flowchart TD
 | `cpm-routing-config` | Manual routing overrides | `cluster_id`, `dataset`, `locked`, `previous_cluster_id` |
 | `cpm-scores` | Composite health scores | `scored_at`, `forecast_horizon_hours`, `clusters[]` (nested: `cluster_id`, `total_score`, `disk_score`, `jvm_score`, `shard_score`, `load_score`, `alert`) |
 | `cpm-bytes-per-event` | Average bytes per event | `bytes_per_event`, `computed_at`, `total_disk_delta_bytes`, `total_events` |
-| `cpm-routing-suggestions` | Routing recommendations | `dataset`, `namespace`, `source_cluster_id`, `suggested_cluster_id`, `source_score`, `target_score`, `event_rate_1h`, `reason` |
+| `cpm-routing-suggestions` | Routing recommendations | `data_stream_type`, `dataset`, `namespace`, `source_cluster_id`, `suggested_cluster_id`, `source_score`, `target_score`, `event_rate_1h`, `reason` |
 | `cpm-pipeline-templates` | Logstash config templates | `name`, `template`, `kafka_bootstrap`, `consumer_threads`, `pipeline_settings` |
-| `cpm-pipeline-state` | Desired pipeline assignments | `dataset`, `namespace`, `pipeline_type`, `pipeline_id`, `cluster_id`, `dc`, `topic`, `updated_at` |
+| `cpm-pipeline-state` | Desired pipeline assignments | `data_stream_type`, `dataset`, `namespace`, `pipeline_type`, `pipeline_id`, `cluster_id`, `dc`, `topic`, `updated_at` |
 
 **Index relationship diagram:**
 
@@ -444,17 +448,36 @@ Note: All daily watchers run in sequence: registry-sync (00:00) → scoring (00:
 
 `cpm-pipeline-state` is the source of truth for catchall topic assignments.
 
+### Data Stream Identity
+
+Elasticsearch data streams are identified by three fields. CPM carries all three through suggestions, state, and dedicated pipelines:
+
+| Field | Example | Where used |
+|--|--|--|
+| `data_stream_type` | `logs`, `metrics`, `traces` | Parsed from backing index name; stored in suggestions and state; dedicated Logstash output |
+| `dataset` | `nginx.access` | Kafka topic, state doc, Logstash `data_stream_dataset` |
+| `namespace` | `default` | Kafka topic, state doc, Logstash `data_stream_namespace` |
+
+**Kafka topic format:** `{type}-{dataset}-{namespace}` (e.g. `logs-nginx.access-default`)
+
+**State document ID:** `{type}-{dataset}-{namespace}` (same as the Kafka topic for new entries)
+
+**Backing index parsing:** `.ds-{type}-{dataset}-{namespace}-{date}-{generation}` → the type prefix is extracted before dataset/namespace are split out.
+
+Legacy state entries without a type-prefixed `topic` field are still supported (defaulting to `logs`) but should be migrated to the prefixed format.
+
 ### State Entry Structure
 
 ```json
 {
+  "data_stream_type": "logs",
   "dataset": "endpoint.events.process",
   "namespace": "default",
   "pipeline_type": "dedicated",
   "pipeline_id": "unknown-region_cpm-dedicated-A9FOWH3jRSycLLvcAF6dtg",
   "cluster_id": "A9FOWH3jRSycLLvcAF6dtg",
   "dc": "unknown-region",
-  "topic": "endpoint.events.process-default",
+  "topic": "logs-endpoint.events.process-default",
   "updated_at": "2026-05-18T10:05:00.000Z"
 }
 ```
@@ -494,7 +517,7 @@ To move a dataset from cluster A's catchall to cluster B's:
 
 1. Edit the state document:
    ```
-   PUT cpm-pipeline-state/_doc/endpoint.events.process-default
+   PUT cpm-pipeline-state/_doc/logs-endpoint.events.process-default
    { "cluster_id": "cluster-B-id", ... }
    ```
 2. Run the state-manager (or wait for hourly run): `POST _watcher/watch/cpm-state-manager/_execute`
@@ -526,7 +549,7 @@ output {
   elasticsearch {
     hosts => [__ES_HOSTS__]
     data_stream => true
-    data_stream_type => "logs"
+    data_stream_type => "__DATA_STREAM_TYPE__"
     data_stream_dataset => "__DATASET__"
     data_stream_namespace => "__NAMESPACE__"
     api_key => "${__API_KEY_VAR__}"
@@ -588,6 +611,16 @@ Changes to these fields take effect on the next pipeline-manager execution.
 
 ## Configuration & Deployment
 
+### Index mappings
+
+CPM does not use Elasticsearch composable index templates. Index mappings are defined in `cpm_configs.json` under the `mappings` key and applied by `cpm_install.py`:
+
+- **New deployment** (`python3 cpm_install.py`): Step 4 creates each config index with the full mapping, including `data_stream_type` on `cpm-routing-suggestions` and `cpm-pipeline-state`.
+- **Existing deployment** (re-run install without `--clean`): `ensure_index_mappings()` issues a `PUT /{index}/_mapping` to add any new fields without recreating indices.
+- **Clean reinstall** (`python3 cpm_install.py --clean`): Deletes and recreates all config indices with current mappings.
+
+Both `cpm-routing-suggestions` and `cpm-pipeline-state` use `dynamic: strict`, so all fields must be declared in the mapping before watchers can write them.
+
 ### Deployment
 
 ```bash
@@ -627,7 +660,7 @@ curl "https://<host>/cpm-pipeline-state/_search?size=500" \
   -H "Authorization: ApiKey <key>"
 
 # 3. Edit state if needed (move datasets between clusters)
-curl -X PUT "https://<host>/cpm-pipeline-state/_doc/<dataset>-<namespace>" \
+curl -X PUT "https://<host>/cpm-pipeline-state/_doc/<type>-<dataset>-<namespace>" \
   -H "Authorization: ApiKey <key>" \
   -H "Content-Type: application/json" \
   -d '{ ... updated state ... }'

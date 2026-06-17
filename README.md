@@ -54,6 +54,8 @@ Autonomous multi-cluster routing for Elasticsearch. CPM monitors cluster health 
 | `-key` | API key, Base64-encoded (overrides cpm_settings.json) |
 | `-monitoring-index` | Monitoring index pattern (default: `.monitoring-es-8-*`) |
 | `-settings` | Path to settings file (default: `cpm_settings.json`) |
+| `-ca` | Path to CA certificate for TLS (auto-uses `docker-ca.crt` for localhost) |
+| `--insecure` | Disable TLS certificate verification |
 | `-configs` | Path to cpm_configs.json (default: `cpm_configs.json`) |
 | `-start` | Datafeed start ISO8601 timestamp (default: now-2d) |
 | `--clean` | Delete and recreate config indices (destroys existing data) |
