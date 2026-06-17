@@ -9,14 +9,21 @@ Usage:
 
 import json, re, sys, os, time, argparse
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 from urllib.parse import urlparse
 import requests
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+DEFAULT_CA = SCRIPT_DIR / "docker-ca.crt"
 
 # ── Load settings ─────────────────────────────────────────
 p = argparse.ArgumentParser(description="CPM Installer")
 p.add_argument("-url", help="Elasticsearch URL (overrides cpm_settings.json)")
 p.add_argument("-key", help="API key, Base64-encoded (overrides cpm_settings.json)")
 p.add_argument("-monitoring-index", help="Monitoring index pattern (overrides cpm_settings.json)")
+p.add_argument("-ca", "--ca", help="Path to CA certificate for TLS (Docker: docker-ca.crt)")
+p.add_argument("--insecure", action="store_true",
+               help="Disable TLS certificate verification (not recommended)")
 p.add_argument("-configs", default="cpm_configs.json", help="Path to cpm_configs.json")
 p.add_argument("-settings", default="cpm_settings.json", help="Path to settings file")
 p.add_argument("-start", default=None, help="Datafeed start ISO8601 (default: now-2d)")
@@ -48,6 +55,16 @@ ES_HOSTNAME = _es.hostname or "localhost"
 ES_PORT = _es.port or (443 if _es.scheme == "https" else 80)
 H   = {"Authorization": f"ApiKey {KEY}", "Content-Type": "application/json"}
 
+ca_path = args.ca or settings.get("es_ca_cert")
+if not ca_path and ES_HOSTNAME in ("localhost", "127.0.0.1") and DEFAULT_CA.is_file():
+    ca_path = str(DEFAULT_CA)
+if args.insecure:
+    VERIFY_SSL = False
+elif ca_path and os.path.isfile(ca_path):
+    VERIFY_SSL = ca_path
+else:
+    VERIFY_SSL = True
+
 with open(args.configs) as f:
     bundle = json.load(f)
 
@@ -55,7 +72,7 @@ failures = []
 
 
 def req(method, path, body=None, ok404=False, ok_exists=False):
-    r = requests.request(method, f"{ES}{path}", headers=H, json=body, timeout=30)
+    r = requests.request(method, f"{ES}{path}", headers=H, json=body, timeout=30, verify=VERIFY_SSL)
     if ok404 and r.status_code == 404:
         return None
     if ok_exists and r.status_code == 400 and "resource_already_exists_exception" in r.text:
@@ -85,6 +102,11 @@ def delete_job(name):
 # STEP 0: Verify field paths
 # ──────────────────────────────────────────────────────────
 hdr("STEP 0: Field Path Verification")
+
+if args.insecure:
+    inf("TLS: certificate verification disabled (--insecure)")
+elif isinstance(VERIFY_SSL, str):
+    inf(f"TLS: using CA certificate {VERIFY_SSL}")
 
 print("\n  [0a] Cluster ID field...")
 CID = None
@@ -186,6 +208,51 @@ def adapt_fields(cfg):
     return json.loads(s)
 
 
+def patch_registry(registry_cfg: dict) -> None:
+    if not registry_cfg:
+        return
+    r = req("POST", "/cpm-cluster-registry/_search", {"size": 50, "query": {"match_all": {}}})
+    if not r:
+        return
+    for hit in r["hits"]["hits"]:
+        src = hit["_source"]
+        name = src.get("cluster_name", "")
+        defaults = registry_cfg.get(name) or registry_cfg.get(src.get("cluster_id", ""))
+        if not defaults:
+            continue
+        doc = {**src, **{k: v for k, v in defaults.items() if v is not None}}
+        if req("PUT", f"/cpm-cluster-registry/_doc/{hit['_id']}?refresh=wait_for", doc):
+            ok(f"Registry {name or hit['_id']}: {', '.join(defaults.keys())}")
+
+
+def ensure_template_mapping() -> None:
+    mapping = bundle.get("mappings", {}).get("cpm-pipeline-templates", {})
+    props = mapping.get("properties", {})
+    extra = {k: v for k, v in props.items() if k in ("consumer_threads",)}
+    if extra:
+        req("PUT", "/cpm-pipeline-templates/_mapping", {"properties": extra}, ok404=True)
+
+
+def ensure_index_mappings() -> None:
+    """Add new mapping fields to indices that already exist (upgrade path)."""
+    for idx, mapping in bundle.get("mappings", {}).items():
+        props = mapping.get("properties", {})
+        if not props:
+            continue
+        r = req("PUT", f"/{idx}/_mapping", {"properties": props}, ok404=True)
+        if r:
+            ok(f"Mapping verified for {idx}")
+
+
+def execute_watcher(name):
+    r = req("POST", f"/_watcher/watch/{name}/_execute", {})
+    if not r:
+        return False
+    state = r.get("watch_record", {}).get("status", {}).get("execution_state", "?")
+    ok(f"{name} executed ({state})")
+    return True
+
+
 # ──────────────────────────────────────────────────────────
 # STEP 1: ML jobs (from cpm_configs.json)
 # ──────────────────────────────────────────────────────────
@@ -256,6 +323,8 @@ for idx, mapping in bundle.get("mappings", {}).items():
     }, ok_exists=not args.clean)
     if r: ok(f"Index {idx} created")
 
+ensure_index_mappings()
+
 if args.clean:
     print("  ⚠ --clean: indices were deleted and recreated")
 
@@ -282,31 +351,6 @@ for name, cfg in json.loads(watch_str).items():
     if r: ok(f"Watch {name} installed")
 
 
-def patch_registry(registry_cfg: dict) -> None:
-    if not registry_cfg:
-        return
-    r = req("POST", "/cpm-cluster-registry/_search", {"size": 50, "query": {"match_all": {}}})
-    if not r:
-        return
-    for hit in r["hits"]["hits"]:
-        src = hit["_source"]
-        name = src.get("cluster_name", "")
-        defaults = registry_cfg.get(name) or registry_cfg.get(src.get("cluster_id", ""))
-        if not defaults:
-            continue
-        doc = {**src, **{k: v for k, v in defaults.items() if v is not None}}
-        if req("PUT", f"/cpm-cluster-registry/_doc/{hit['_id']}?refresh=wait_for", doc):
-            ok(f"Registry {name or hit['_id']}: {', '.join(defaults.keys())}")
-
-
-def ensure_template_mapping() -> None:
-    mapping = bundle.get("mappings", {}).get("cpm-pipeline-templates", {})
-    props = mapping.get("properties", {})
-    extra = {k: v for k, v in props.items() if k in ("consumer_threads",)}
-    if extra:
-        req("PUT", "/cpm-pipeline-templates/_mapping", {"properties": extra}, ok404=True)
-
-
 # ──────────────────────────────────────────────────────────
 # STEP 6: Pipeline templates
 # ──────────────────────────────────────────────────────────
@@ -330,15 +374,6 @@ else:
     inf("No cluster_registry in settings — set ingest_hosts manually or via bootstrap script")
 
 
-def execute_watcher(name):
-    r = req("POST", f"/_watcher/watch/{name}/_execute", {})
-    if not r:
-        return False
-    state = r.get("watch_record", {}).get("status", {}).get("execution_state", "?")
-    ok(f"{name} executed ({state})")
-    return True
-
-
 # ──────────────────────────────────────────────────────────
 # STEP 8: Bootstrap routing → state → pipelines (optional)
 # ──────────────────────────────────────────────────────────
@@ -349,7 +384,7 @@ if args.bootstrap:
     time.sleep(1)
     execute_watcher("cpm-scoring")
     execute_watcher("cpm-routing-advisor")
-    # Preserve beats-raw on central before state-manager merges monitoring datasets
+    # Preserve logs-beats-raw on central before state-manager merges monitoring datasets
     central = None
     r = req("POST", "/cpm-cluster-registry/_search", {
         "size": 1,
@@ -361,17 +396,18 @@ if args.bootstrap:
         src = central["_source"]
         dc = src.get("dc") or "dc-central"
         cid = src["cluster_id"]
-        req("PUT", "/cpm-pipeline-state/_doc/beats-raw", {
+        req("PUT", "/cpm-pipeline-state/_doc/logs-beats-raw", {
+            "data_stream_type": "logs",
             "dataset": "beats",
             "namespace": "raw",
             "pipeline_type": "catchall",
             "pipeline_id": f"{dc}_cpm-catchall-{cid}",
             "cluster_id": cid,
             "dc": dc,
-            "topic": "beats-raw",
+            "topic": "logs-beats-raw",
             "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         })
-        ok("Seeded beats-raw on central catchall")
+        ok("Seeded logs-beats-raw on central catchall")
     execute_watcher("cpm-state-manager")
     patch_registry(REGISTRY_CFG)
     execute_watcher("cpm-pipeline-manager")
